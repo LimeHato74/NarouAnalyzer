@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <title>Narou Analyzer Pro V4 - ジャンル特化版</title>
+    <title>Narou Analyzer Pro V4.2 - Created by ペンギンの搾り汁</title>
     <meta name="description" content="Web小説執筆者向け高精度分析ツール。恋愛、ファンタジー、SFなどジャンル別に最適化されたスコアリング。">
     
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
@@ -45,11 +45,12 @@
 
 <div id="app" v-cloak class="flex-grow">
     <header class="navbar glass-panel sticky top-0 z-50 px-4 transition-colors duration-300">
-        <div class="flex-1">
+        <div class="flex-1 flex-col items-start">
             <h1 class="text-xl md:text-2xl font-black text-primary flex items-center gap-2 tracking-tighter cursor-pointer" onclick="window.scrollTo(0,0)">
                 <i class="ph-fill ph-pen-nib-straight"></i> 
-                <span>Narou Analyzer <span class="text-secondary">Pro V4</span></span>
+                <span>Narou Analyzer <span class="text-secondary">Pro V4.2</span></span>
             </h1>
+            <div class="text-[10px] font-bold text-base-content/50 ml-8 -mt-1">Created by ペンギンの搾り汁</div>
         </div>
         <div class="flex-none gap-2">
             <label class="swap swap-rotate btn btn-ghost btn-circle btn-sm">
@@ -105,8 +106,9 @@
             <div v-if="!stats" class="flex flex-col h-full min-h-[400px]">
                 <div class="flex-1 flex flex-col items-center justify-center text-base-content/30 border-2 border-dashed border-base-300 rounded-3xl p-8 mb-6">
                     <i class="ph-duotone ph-books text-7xl mb-4 animate-pulse text-secondary"></i>
-                    <p class="text-xl font-bold">ジャンル別詳細解析 V4</p>
+                    <p class="text-xl font-bold">ジャンル別詳細解析 V4.2</p>
                     <p class="text-sm mt-2 opacity-70">恋愛・ファンタジー・SF・文芸など全18カテゴリに対応</p>
+                    <div class="mt-8 text-xs font-mono opacity-50 bg-base-200 px-4 py-2 rounded-full">Designed by ペンギンの搾り汁</div>
                 </div>
             </div>
 
@@ -228,6 +230,12 @@
         </section>
     </main>
 
+    <footer class="footer footer-center p-4 bg-base-300 text-base-content">
+        <div>
+            <p class="font-bold text-xs opacity-60">Created by ペンギンの搾り汁</p>
+        </div>
+    </footer>
+
     <div class="fixed bottom-0 left-0 right-0 p-4 z-40 bg-gradient-to-t from-base-200 via-base-200 to-transparent pointer-events-none">
         <div class="max-w-md mx-auto pointer-events-auto flex flex-col gap-2">
             <div v-if="toastMessage" class="alert shadow-lg py-2 text-sm animate-bounce-in" :class="toastType">
@@ -235,7 +243,7 @@
             </div>
             <button @click="analyzeText" :disabled="isProcessing || inputText.length < 10" class="btn btn-primary btn-lg w-full shadow-2xl border-t border-white/20 transition-all hover:scale-[1.02]">
                 <span v-if="isProcessing" class="loading loading-dots loading-md"></span>
-                <span v-else class="flex items-center gap-2 font-bold text-lg"><i class="ph-bold ph-lightning"></i> AI解析を実行 (V4)</span>
+                <span v-else class="flex items-center gap-2 font-bold text-lg"><i class="ph-bold ph-lightning"></i> AI解析を実行 (V4.2)</span>
             </button>
         </div>
     </div>
@@ -404,11 +412,10 @@
             let radarChart = null;
             let sentimentChart = null;
 
-            // ダークモード監視: 変数が変わったらHTMLタグの属性を変更する
+            // ダークモード監視
             watch(isDarkMode, (val) => {
                 document.documentElement.setAttribute('data-theme', val ? 'night' : 'winter');
                 if(stats.value) {
-                    // チャートの再描画（グリッド色などの反映のため）
                     nextTick(() => renderCharts(stats.value));
                 }
             }, { immediate: true });
@@ -452,8 +459,8 @@
                 const rank = stats.value.rank;
                 const genre = currentScoringProfile.value.name;
                 
-                const text = `【Narou Analyzer Pro V4】\nジャンル：${genre}\n評価：${rank}ランク (${score}/100)\n\n#NarouAnalyzer`;
-                const url = window.location.href; // 現在のURL
+                const text = `【Narou Analyzer Pro V4.2】\nジャンル：${genre}\n評価：${rank}ランク (${score}/100)\nCreated by ペンギンの搾り汁\n#NarouAnalyzer`;
+                const url = window.location.href; 
                 
                 const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
                 window.open(shareUrl, '_blank');
@@ -487,7 +494,7 @@
                         }
                     });
 
-                    // 2. 文末繰り返し
+                    // 2. 文末繰り返し (さらに緩和: 長文耐久強化版)
                     let endings = [];
                     cleanSentences.forEach(s => {
                         if (s.endsWith('」')) return;
@@ -495,12 +502,35 @@
                         else if (/[る|いる][。！？]?$/.test(s)) endings.push('PRES');
                         else endings.push('OTHER');
                     });
-                    let repetitionScore = 100;
+
+                    // 重複判定：コンボ回数の累積ではなく、「3連打以上が発生した回数」を文数で割る
+                    let badSequenceCount = 0;
                     let combo = 1;
                     for (let i = 1; i < endings.length; i++) {
-                        if (endings[i] === endings[i-1]) { combo++; if (combo >= 3) repetitionScore -= (combo * 2); }
+                        if (endings[i] === endings[i-1] && endings[i] !== 'OTHER') { 
+                            combo++; 
+                            // 3回連続、6回連続...といったタイミングでのみカウント（過剰カウント防止）
+                            if (combo === 3) badSequenceCount++;
+                            if (combo > 5) badSequenceCount++; 
+                        }
                         else combo = 1;
                     }
+
+                    const sentenceCount = Math.max(1, cleanSentences.length);
+                    // 発生率(%) = (悪い並びの数 / 全文数) * 100
+                    const repetitionRate = (badSequenceCount / sentenceCount) * 100;
+
+                    // スコア計算：閾値方式
+                    // 3%くらいまでなら長編小説でも誤差として許容(100点)。
+                    // それを超えた分だけ減点。これにより「長いだけで減点」を防ぐ。
+                    let repetitionScore = 100;
+                    const tolerance = 3.0; // 3%までは許容
+                    
+                    if (repetitionRate > tolerance) {
+                        // 超過1%ごとに5点減点くらいのマイルドなカーブ
+                        repetitionScore = Math.max(0, 100 - ((repetitionRate - tolerance) * 5));
+                    }
+                    
                     if (genreKey === 'poetry') repetitionScore = 100;
 
                     // 3. 統計データ
