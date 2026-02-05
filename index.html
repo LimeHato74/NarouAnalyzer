@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="winter">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <title>Narou Analyzer Pro - なろう系Web小説の文体・内容評価スコアリングツール</title>
+    <meta name="description" content="小説家になろう等のWeb小説執筆者向け無料分析ツール。異世界、ファンタジー、恋愛などジャンルに合わせて文体リズム、五感描写、感情曲線をAIが自動採点。ブラウザ完結でセキュリティも安心。">
+    <meta name="keywords" content="なろう系,小説分析,推敲,執筆ツール,感想AI,スコアリング,文体診断,新人賞">
+    <meta property="og:title" content="Web小説分析ツール - Narou Analyzer Pro">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://your-domain.com/">
+    <meta property="og:image" content="https://your-domain.com/ogp.png">
+    <meta property="og:description" content="あなたの小説を「なろう基準」でS〜Cランク判定。感情の起伏や五感描写もグラフ化します。">
+    <meta property="og:site_name" content="Narou Analyzer Pro">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="canonical" href="https://your-domain.com/">
+    <link rel="icon" href="/favicon.ico">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Narou Analyzer Pro",
+      "url": "https://your-domain.com/",
+      "description": "Web小説のテキストを入力すると、ジャンルごとの適正を分析しスコアリングするツール。",
+      "applicationCategory": "UtilityApplication",
+      "operatingSystem": "All",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "JPY" }
+    }
+    </script>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&family=Zen+Maru+Gothic:wght@500;700&display=swap');
+        
+        body { font-family: 'Zen Maru Gothic', sans-serif; transition: background-color 0.3s, color 0.3s; }
+        .font-mono-jp { font-family: 'BIZ UDGothic', monospace; }
+        
+        [v-cloak] { display: none; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        [data-theme="night"] .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-base-200 flex flex-col">
+
+<div id="app" v-cloak class="flex-grow">
+    <header class="navbar glass-panel sticky top-0 z-50 shadow-sm px-4">
+        <div class="flex-1">
+            <h1 class="text-xl md:text-2xl font-black text-primary flex items-center gap-2 tracking-tighter cursor-pointer" onclick="window.scrollTo(0,0)">
+                <i class="ph-fill ph-pen-nib-straight"></i> 
+                <span>Narou<span class="hidden md:inline"> Analyzer Pro</span></span>
+            </h1>
+        </div>
+        <div class="flex-none gap-2">
+            <button class="btn btn-ghost btn-xs md:btn-sm" onclick="my_modal_2.showModal()">
+                <i class="ph-fill ph-shield-check text-success"></i> 安全性について
+            </button>
+            <label class="swap swap-rotate btn btn-ghost btn-circle btn-sm">
+                <input type="checkbox" v-model="isDarkMode" />
+                <i class="ph-fill ph-sun swap-on text-yellow-500 text-xl"></i>
+                <i class="ph-fill ph-moon swap-off text-indigo-500 text-xl"></i>
+            </label>
+        </div>
+    </header>
+
+    <main class="p-4 md:p-8 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 pb-24">
+        <section class="lg:col-span-4 space-y-4">
+            <div class="card bg-base-100 shadow-lg">
+                <div class="card-body p-4">
+                    <label class="label pt-0"><span class="label-text font-bold text-gray-500">執筆ジャンルを選択</span></label>
+                    <select v-model="selectedGenre" class="select select-bordered w-full select-sm md:select-md font-bold">
+                        <template v-for="(subGenres, mainGenre) in genreDefinitions" :key="mainGenre">
+                            <optgroup :label="mainGenre">
+                                <option v-for="sub in subGenres" :value="sub.id">{{ sub.name }}</option>
+                            </optgroup>
+                        </template>
+                    </select>
+                    <div class="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                        <i class="ph-fill ph-info"></i> <span>{{ currentGenreSettings.description }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card bg-base-100 shadow-xl border-t-4 border-primary">
+                <div class="card-body p-4 md:p-6">
+                    <div class="flex justify-between items-end mb-2">
+                        <h2 class="text-sm font-bold text-gray-500 uppercase tracking-wider">本文入力</h2>
+                        <span class="text-xs badge" :class="inputText.length > 0 ? 'badge-primary' : 'badge-ghost'">{{ inputText.length.toLocaleString() }} chars</span>
+                    </div>
+                    <textarea v-model="inputText" class="textarea textarea-bordered w-full h-[40vh] lg:h-[60vh] font-mono-jp text-base leading-8 resize-none focus:outline-none focus:border-primary transition-all" :class="{'bg-gray-50 text-gray-800': !isDarkMode, 'bg-gray-800 text-gray-100': isDarkMode}" placeholder="ここに小説の本文を貼り付けてください。&#10;※データはサーバーに送信されず、ブラウザ内で安全に解析されます。"></textarea>
+                </div>
+            </div>
+        </section>
+
+        <section class="lg:col-span-8 space-y-6" id="results-area">
+            <div v-if="!stats" class="flex flex-col h-full min-h-[400px]">
+                <div class="flex-1 flex flex-col items-center justify-center text-base-content/30 border-2 border-dashed border-base-300 rounded-box p-8 mb-6">
+                    <i class="ph ph-brain text-6xl mb-4 animate-pulse"></i>
+                    <p class="text-lg font-bold">AI文体診断 & 感情分析</p>
+                    <p class="text-sm mt-2">入力されたテキストは外部に流出しません</p>
+                </div>
+                <article class="prose prose-sm md:prose max-w-none bg-base-100 p-6 rounded-xl shadow-sm">
+                    <h3>このツールについて</h3>
+                    <p>Web小説投稿サイト（小説家になろう、カクヨム等）での人気作品傾向に基づき、あなたの小説を解析・スコアリングします。</p>
+                    <ul>
+                        <li><strong>ジャンル別最適化:</strong> 異世界、ファンタジー、恋愛など選択したジャンルに合わせて基準を変更。</li>
+                        <li><strong>感情曲線分析:</strong> 物語の起承転結における感情の盛り上がりをグラフ化。</li>
+                        <li><strong>五感描写チェック:</strong> 没入感を高めるための描写バランスを判定。</li>
+                    </ul>
+                </article>
+            </div>
+
+            <div v-if="stats" class="space-y-6 animate-fade-in-up">
+                
+                <div class="card bg-base-100 shadow-xl overflow-hidden">
+                    <div class="absolute top-0 left-0 w-2 h-full" :class="rankColorClass"></div>
+                    <div class="card-body p-5 md:p-8">
+                        <div class="flex flex-col md:flex-row gap-6 items-center">
+                            <div class="text-center md:text-left min-w-[120px]">
+                                <div class="text-xs text-gray-400 font-bold mb-1">総合ランク</div>
+                                <div class="text-8xl font-black leading-none bg-clip-text text-transparent bg-gradient-to-br" :class="rankGradient">{{ stats.rank }}</div>
+                                <div class="badge badge-lg mt-2 font-bold w-full shadow-sm" :class="rankBadgeColor">{{ stats.title }}</div>
+                            </div>
+                            <div class="flex-1 w-full bg-base-200/50 p-4 rounded-xl border border-base-300 relative">
+                                <i class="ph-fill ph-quotes text-4xl absolute -top-3 -left-2 text-base-content/10"></i>
+                                <h3 class="font-bold text-sm mb-2 flex items-center gap-2"><i class="ph-fill ph-robot text-primary"></i> AI講評</h3>
+                                <p class="text-sm md:text-base leading-relaxed opacity-90 whitespace-pre-line">{{ stats.comment }}</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-6 pt-6 border-t border-base-200">
+                            <div class="text-center">
+                                <div class="text-xs text-gray-500 mb-1">ジャンル一致度</div>
+                                <div class="font-bold text-xl">{{ stats.contentMetrics.genreMatch }}<span class="text-xs font-normal">%</span></div>
+                            </div>
+                            <div class="text-center border-l border-base-200">
+                                <div class="text-xs text-gray-500 mb-1">五感描写</div>
+                                <div class="font-bold text-xl" :class="stats.contentMetrics.sensoryScore > 5 ? 'text-secondary' : ''">Lv.{{ stats.contentMetrics.sensoryScore }}</div>
+                            </div>
+                            <div class="text-center border-l border-base-200">
+                                <div class="text-xs text-gray-500 mb-1">可読性スコア</div>
+                                <div class="font-bold text-xl">{{ stats.metrics[1].toFixed(0) }}<span class="text-xs font-normal">pt</span></div>
+                            </div>
+                            <div class="text-center border-l border-base-200">
+                                <div class="text-xs text-gray-500 mb-1">感情起伏</div>
+                                <div class="font-bold text-xl text-accent">{{ stats.contentMetrics.emotionalRange }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button @click="shareToX" class="btn btn-neutral text-white shadow-lg w-full transform transition hover:scale-[1.02]">
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        <span>結果をポストする</span>
+                    </button>
+                    <button @click="copyResult" class="btn btn-outline bg-base-100 shadow-md w-full">
+                        <i class="ph-bold ph-copy"></i>
+                        <span>結果をコピー</span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="card bg-base-100 shadow-lg md:col-span-2">
+                        <div class="card-body p-4">
+                            <h3 class="font-bold text-sm text-gray-500 flex items-center gap-2"><i class="ph-fill ph-heartbeat text-pink-500"></i> ストーリーの感情曲線</h3>
+                            <div class="relative w-full h-[200px]"><canvas id="sentimentChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="card bg-base-100 shadow-lg">
+                        <div class="card-body p-4">
+                            <h3 class="font-bold text-sm text-gray-500 flex items-center gap-2"><i class="ph-fill ph-radar"></i> 総合バランス分析</h3>
+                            <div class="relative w-full aspect-square md:aspect-video lg:aspect-square"><canvas id="radarChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="card bg-base-100 shadow-lg">
+                        <div class="card-body p-4">
+                            <h3 class="font-bold text-sm text-gray-500 flex items-center gap-2"><i class="ph-fill ph-eye text-teal-500"></i> 五感描写 & ジャンルワード</h3>
+                            <div class="space-y-4 mt-2">
+                                <div><div class="flex justify-between text-xs mb-1"><span>視覚</span><span class="font-bold text-teal-600">Sight</span></div><progress class="progress progress-accent w-full" :value="Math.min(100, stats.contentMetrics.senses.sight * 20)" max="100"></progress></div>
+                                <div><div class="flex justify-between text-xs mb-1"><span>聴覚</span><span class="font-bold text-blue-600">Sound</span></div><progress class="progress progress-info w-full" :value="Math.min(100, stats.contentMetrics.senses.sound * 20)" max="100"></progress></div>
+                                <div><div class="flex justify-between text-xs mb-1"><span>触覚</span><span class="font-bold text-orange-600">Touch</span></div><progress class="progress progress-warning w-full" :value="Math.min(100, stats.contentMetrics.senses.touch * 20)" max="100"></progress></div>
+                                <div class="bg-base-200 p-3 rounded-lg mt-4">
+                                    <div class="text-xs font-bold text-gray-500 mb-2">検出キーワード</div>
+                                    <div class="flex flex-wrap gap-1">
+                                        <span v-for="word in stats.contentMetrics.foundKeywords" :key="word" class="badge badge-sm badge-outline bg-base-100">{{ word }}</span>
+                                        <span v-if="stats.contentMetrics.foundKeywords.length === 0" class="text-xs text-gray-400">特になし</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body p-0 md:p-6">
+                        <div class="p-4 md:p-0"><h3 class="card-title text-base"><i class="ph-fill ph-check-circle text-success"></i> 改善チェックリスト</h3></div>
+                        <div class="overflow-x-auto">
+                            <table class="table table-zebra w-full text-sm">
+                                <thead class="bg-base-200">
+                                    <tr><th>項目</th><th class="text-center">現状</th><th class="hidden md:table-cell">目標目安</th><th>アドバイス</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="item in adviceList" :key="item.label">
+                                        <td class="font-bold whitespace-nowrap">{{ item.label }}</td>
+                                        <td class="text-center font-mono font-bold" :class="item.statusColor">{{ item.value }}</td>
+                                        <td class="hidden md:table-cell text-gray-500 text-xs">{{ item.target }}</td>
+                                        <td><span class="badge badge-sm border-0" :class="item.badge">{{ item.msg }}</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer footer-center p-4 bg-base-300 text-base-content">
+        <aside><p class="font-bold text-xs md:text-sm">&copy; 2024 Narou Analyzer Pro. Powered by Vue.js & Chart.js.</p></aside>
+    </footer>
+
+    <div class="fixed bottom-4 left-0 right-0 px-4 z-40 flex flex-col gap-2 items-center pointer-events-none">
+        <div v-if="toastMessage" class="alert shadow-lg w-auto min-w-[300px] animate-bounce-in pointer-events-auto" :class="toastType">
+            <i class="ph-fill text-xl" :class="toastIcon"></i><span>{{ toastMessage }}</span>
+        </div>
+        <button @click="analyzeText" :disabled="isProcessing || inputText.length < 10" class="btn btn-primary btn-lg w-full max-w-md shadow-xl border-t border-white/20 pointer-events-auto transition-all transform active:scale-95" :class="{'btn-disabled opacity-50': inputText.length < 10}">
+            <span v-if="isProcessing" class="loading loading-spinner"></span>
+            <span v-else class="flex items-center gap-2"><i class="ph-bold ph-lightning"></i><span>{{ getGenreName(selectedGenre) }}基準で解析</span></span>
+        </button>
+    </div>
+</div>
+
+<dialog id="my_modal_2" class="modal">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg text-success flex items-center gap-2"><i class="ph-fill ph-lock-key"></i> データ保護について</h3>
+    <p class="py-4"><strong>1. サーバーへの送信なし</strong><br>このツールはブラウザ内で処理を行います。入力データがサーバーに送信・保存されることはありません。</p>
+    <div class="modal-action"><form method="dialog"><button class="btn">閉じる</button></form></div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<script>
+    const DICTIONARIES = {
+        positive: ['好き', '愛', '嬉しい', '楽しい', '幸せ', '光', '笑顔', '希望', '成功', '美しい', '最高', '安心', '温かい', '喜び', '勝利', '素敵', 'ありがとう', '仲間', '絆', '回復', '救い', '優雅', '可憐', '爽快'],
+        negative: ['嫌い', '憎', '悲しい', '辛い', '苦しい', '闇', '涙', '絶望', '失敗', '醜い', '最悪', '不安', '冷たい', '怒り', '敗北', '死', '殺', '痛い', '怖い', '恐怖', '孤独', '裏切り', '叫び', '血', '傷'],
+        sight: ['見る', '見え', '視線', '色', '赤', '青', '黒', '白', '輝', '暗', '光', '姿', '景色', '瞳', '鮮やか', 'ぼんやり', '映る'],
+        sound: ['聞', '音', '声', '響', '静寂', '叫', '囁', '歌', '騒', '耳', '轟', 'メロディ', '悲鳴', 'ざわ'],
+        touch: ['痛', '熱', '冷', '触', '肌', '震', '重', '軽', '硬', '柔', '風', '撫', '殴', '体温', '痺'],
+        genres: {
+            isekai: ['魔法', 'スキル', 'レベル', '剣', 'ギルド', '魔王', '勇者', '転生', '召喚', 'ステータス', '王女', '令嬢', '婚約破棄', '王子', '貴族', 'ダンジョン', '冒険者', '魔物', 'ドラゴン'],
+            real_love: ['学校', '教室', '先輩', '後輩', '部活', '放課後', 'デート', '告白', '携帯', 'スマホ', '仕事', '会社', '結婚', '離婚', '浮気', '彼氏', '彼女', '恋人'],
+            high_fantasy: ['剣', '魔法', 'ドラゴン', 'エルフ', 'ドワーフ', '王国', '帝国', '精霊', '神', '呪い', '城', '騎士', '森', '旅', '伝説'],
+            mystery: ['殺人', '死体', '警察', '刑事', '探偵', '証拠', 'トリック', '犯人', '密室', '動機', 'アリバイ', '事件', '推理', '謎'],
+            horror: ['血', '死', '呪', '霊', '幽霊', '闇', '悲鳴', '恐怖', '殺', '逃', '狂', '影', '化け物', '廃墟', '夜'],
+            scifi: ['宇宙', 'ロボット', 'AI', '船', '星', '未来', '科学', '実験', '博士', '機械', 'システム', 'データ', '仮想', 'VR', 'レーザー']
+        }
+    };
+    
+    const GENRE_PARAMS = {
+        'isekai':       { name: '異世界(恋愛)', type: 'light', keywords: 'isekai', desc: 'キーワード：婚約破棄、魔法、スキル等' },
+        'real_love':    { name: '現実世界(恋愛)', type: 'std', keywords: 'real_love', desc: 'キーワード：学校、オフィス、告白等' },
+        'high_fantasy': { name: 'ハイファンタジー', type: 'light', keywords: 'high_fantasy', desc: 'キーワード：剣、魔法、冒険等' },
+        'low_fantasy':  { name: 'ローファンタジー', type: 'std', keywords: 'isekai', desc: '現代知識×ファンタジー要素' },
+        'pure_lit':     { name: '純文学', type: 'heavy', keywords: null, desc: '感情描写と風景描写の深さを評価' },
+        'human':        { name: 'ヒューマンドラマ', type: 'std', keywords: 'real_love', desc: '人間関係の機微を評価' },
+        'history':      { name: '歴史', type: 'heavy', keywords: 'high_fantasy', desc: '時代背景の描写を評価' },
+        'mystery':      { name: '推理', type: 'heavy', keywords: 'mystery', desc: '謎解き要素、事件性を評価' },
+        'horror':       { name: 'ホラー', type: 'std', keywords: 'horror', desc: '恐怖演出、五感への刺激を評価' },
+        'action':       { name: 'アクション', type: 'std', keywords: 'high_fantasy', desc: '戦闘描写のスピード感を評価' },
+        'comedy':       { name: 'コメディー', type: 'light', keywords: null, desc: 'テンポの良さを最優先' },
+        'vr_game':      { name: 'VRゲーム', type: 'light', keywords: 'scifi', desc: 'ゲーム用語、システム描写' },
+        'space':        { name: '宇宙(SF)', type: 'std', keywords: 'scifi', desc: 'SFガジェット、世界観用語' },
+        'scifi':        { name: '空想科学', type: 'std', keywords: 'scifi', desc: '科学的用語、理論' },
+        'panic':        { name: 'パニック', type: 'light', keywords: 'horror', desc: '切迫感、危機的状況' },
+        'fairy':        { name: '童話', type: 'special', keywords: null, desc: '平易な表現' },
+        'essay':        { name: 'エッセイ', type: 'special', keywords: null, desc: '個人の思想表現' },
+        'poetry':       { name: '詩', type: 'special', keywords: null, desc: 'リズムと感性' },
+        'replay':       { name: 'リプレイ', type: 'special', keywords: null, desc: '会話記録' },
+        'other':        { name: 'その他', type: 'std', keywords: null, desc: '標準的な解析' }
+    };
+
+    const SCORING_PROFILES = {
+        light: { targetLen: 35, lenPenalty: 2.0, minBlank: 15, minDialog: 30, maxKanji: 30 },
+        std: { targetLen: 45, lenPenalty: 1.5, minBlank: 10, minDialog: 20, maxKanji: 40 },
+        heavy: { targetLen: 60, lenPenalty: 1.0, minBlank: 5, minDialog: 5, maxKanji: 50 },
+        special: { targetLen: 50, lenPenalty: 0.5, minBlank: 10, minDialog: 0, maxKanji: 40 }
+    };
+
+    const { createApp, ref, computed, watch, nextTick } = Vue;
+
+    createApp({
+        setup() {
+            const inputText = ref('');
+            const selectedGenre = ref('isekai');
+            const isProcessing = ref(false);
+            const stats = ref(null);
+            const adviceList = ref([]);
+            const isDarkMode = ref(false);
+            const toastMessage = ref('');
+            const toastType = ref('alert-info');
+            let radarChart = null;
+            let sentimentChart = null;
+
+            const genreDefinitions = {
+                '恋愛': [ { id: 'isekai', name: '異世界' }, { id: 'real_love', name: '現実世界' } ],
+                'ファンタジー': [ { id: 'high_fantasy', name: 'ハイファンタジー' }, { id: 'low_fantasy', name: 'ローファンタジー' } ],
+                '文芸': [ { id: 'pure_lit', name: '純文学' }, { id: 'human', name: 'ヒューマンドラマ' }, { id: 'history', name: '歴史' }, { id: 'mystery', name: '推理' }, { id: 'horror', name: 'ホラー' }, { id: 'action', name: 'アクション' }, { id: 'comedy', name: 'コメディー' } ],
+                'SF': [ { id: 'vr_game', name: 'VRゲーム' }, { id: 'space', name: '宇宙' }, { id: 'scifi', name: '空想科学' }, { id: 'panic', name: 'パニック' } ],
+                'その他': [ { id: 'fairy', name: '童話' }, { id: 'poetry', name: '詩' }, { id: 'essay', name: 'エッセイ' }, { id: 'replay', name: 'リプレイ' }, { id: 'other', name: 'その他' } ]
+            };
+
+            watch(isDarkMode, (newVal) => {
+                document.documentElement.setAttribute('data-theme', newVal ? 'night' : 'winter');
+                updateChartTheme();
+            });
+
+            const currentGenreSettings = computed(() => GENRE_PARAMS[selectedGenre.value] || GENRE_PARAMS['other']);
+            const getGenreName = (id) => (GENRE_PARAMS[id] || GENRE_PARAMS['other']).name;
+            const showToast = (msg, type = 'alert-info') => {
+                toastMessage.value = msg;
+                toastType.value = type;
+                setTimeout(() => { toastMessage.value = ''; }, 3000);
+            };
+            const toastIcon = computed(() => {
+                if (toastType.value.includes('success')) return 'ph-check-circle';
+                if (toastType.value.includes('error')) return 'ph-warning-circle';
+                return 'ph-info';
+            });
+            const calculateMean = (arr) => arr.reduce((a, b) => a + b, 0) / (arr.length || 1);
+
+            // Analysis Core
+            const analyzeContent = (tokens, genreKey) => {
+                let posScore = 0, negScore = 0, sightCount = 0, soundCount = 0, touchCount = 0, genreMatchCount = 0;
+                const foundKeywords = new Set();
+                const sentimentTimeline = [];
+                let currentChunkScore = 0;
+                const chunkSize = Math.ceil(tokens.length / 20);
+                const targetGenreKey = GENRE_PARAMS[genreKey].keywords;
+                const genreWords = targetGenreKey ? DICTIONARIES.genres[targetGenreKey] : [];
+
+                tokens.forEach((token, index) => {
+                    let val = 0;
+                    if (DICTIONARIES.positive.some(w => token.includes(w))) { posScore++; val = 1; }
+                    if (DICTIONARIES.negative.some(w => token.includes(w))) { negScore++; val = -1; }
+                    if (DICTIONARIES.sight.some(w => token.includes(w))) sightCount++;
+                    if (DICTIONARIES.sound.some(w => token.includes(w))) soundCount++;
+                    if (DICTIONARIES.touch.some(w => token.includes(w))) touchCount++;
+                    if (genreWords && genreWords.some(w => token.includes(w))) { genreMatchCount++; foundKeywords.add(token); }
+
+                    currentChunkScore += val;
+                    if ((index + 1) % chunkSize === 0 || index === tokens.length - 1) {
+                        sentimentTimeline.push(currentChunkScore);
+                        currentChunkScore = 0;
+                    }
+                });
+
+                const smoothedTimeline = sentimentTimeline.map((val, i, arr) => {
+                    const prev = arr[i-1] || val;
+                    const next = arr[i+1] || val;
+                    return (prev + val + next) / 3;
+                });
+
+                const sensoryScore = Math.min(10, Math.ceil((sightCount + soundCount + touchCount) * 100 / tokens.length));
+                let genreMatchScore = 100;
+                if (genreWords.length > 0) {
+                    const matchRatio = (genreMatchCount / tokens.length) * 1000;
+                    genreMatchScore = Math.min(100, 50 + matchRatio * 10);
+                }
+                const range = Math.max(...smoothedTimeline) - Math.min(...smoothedTimeline);
+                
+                return {
+                    sentimentTimeline: smoothedTimeline,
+                    senses: { sight: sightCount, sound: soundCount, touch: touchCount },
+                    sensoryScore, genreMatchScore,
+                    foundKeywords: Array.from(foundKeywords).slice(0, 8),
+                    emotionalRange: range > 5 ? 'ドラマチック' : range > 2 ? '標準的' : '平坦',
+                    rawRange: range
+                };
+            };
+
+            const analyzeText = async () => {
+                if (inputText.value.length < 10) return;
+                isProcessing.value = true;
+                await new Promise(r => setTimeout(r, 500));
+
+                try {
+                    const text = inputText.value;
+                    const genreKey = selectedGenre.value;
+                    const params = SCORING_PROFILES[GENRE_PARAMS[genreKey].type];
+
+                    let tokens = [];
+                    if (window.Intl && Intl.Segmenter) {
+                        const segmenter = new Intl.Segmenter('ja', { granularity: 'word' });
+                        for (const seg of segmenter.segment(text)) { if (seg.isWordLike) tokens.push(seg.segment); }
+                    } else { tokens = text.split(/[\s\u3000、。！？\(\)「」]+/); }
+                    const ttr = tokens.length > 0 ? ((new Set(tokens).size / tokens.length) * 100).toFixed(1) : 0;
+
+                    const lines = text.split('\n');
+                    const sentences = text.split(/[。！？]/).filter(s => s.trim().length > 0);
+                    const avgLen = calculateMean(sentences.map(s => s.length));
+                    const blankRatio = (lines.filter(l => l.trim() === '').length / lines.length) * 100;
+                    const dialogueRatio = ((text.match(/「[^」]+」/g) || []).join('').length / text.length) * 100;
+                    const kanjiRatio = ((text.match(/[\u4E00-\u9FFF]/g) || []).length / (text.replace(/\s/g,'').length || 1)) * 100;
+
+                    const cMetrics = analyzeContent(tokens, genreKey);
+
+                    let readScore = Math.max(0, Math.min(100, 100 - Math.max(0, (avgLen - params.targetLen) * params.lenPenalty) - Math.max(0, (params.minBlank - blankRatio) * 2)));
+                    let immScore = Math.max(0, Math.min(100, 100 - (dialogueRatio < params.minDialog ? (params.minDialog - dialogueRatio) * 2 : 0)));
+                    let contScore = Math.max(0, Math.min(100, 60 + cMetrics.rawRange * 5 - (cMetrics.genreMatchScore < 60 ? 10 : 0) - (cMetrics.sensoryScore < 2 ? 10 : 0)));
+                    let formScore = (kanjiRatio <= params.maxKanji ? 50 : Math.max(0, 50 - (kanjiRatio - params.maxKanji)*2)) + (avgLen <= params.targetLen ? 50 : Math.max(0, 50 - (avgLen - params.targetLen)*1.5));
+                    
+                    const totalScore = (readScore + immScore + contScore + formScore) / 4;
+                    let rank = totalScore >= 85 ? 'S' : totalScore >= 70 ? 'A' : totalScore >= 55 ? 'B' : 'C';
+                    let title = totalScore >= 85 ? 'マスターピース' : totalScore >= 70 ? '良作' : totalScore >= 55 ? '標準' : '要改善';
+                    let comment = totalScore >= 85 ? `素晴らしい！${getGenreName(genreKey)}として完璧なバランスです。` : 
+                                  totalScore >= 70 ? `良い出来です。${cMetrics.emotionalRange}な展開が評価されています。` : 
+                                  totalScore >= 55 ? `基本はできています。${cMetrics.rawRange < 2 ? '起伏を作りましょう。' : 'バランスを見直しましょう。'}` : 
+                                  `構成か内容に課題があります。アドバイスを確認してください。`;
+
+                    stats.value = { rank, title, comment, metrics: [formScore, readScore, immScore, contScore, parseFloat(ttr)], contentMetrics: cMetrics };
+                    
+                    const list = [];
+                    const isGenreLow = cMetrics.genreMatchScore < 70 && GENRE_PARAMS[genreKey].keywords;
+                    list.push({ label: 'ジャンル性', value: cMetrics.genreMatchScore >= 80 ? '高い' : '普通', target: '関連語句の使用', statusColor: isGenreLow ? 'text-warning' : 'text-success', badge: isGenreLow ? 'badge-warning' : 'badge-success', msg: isGenreLow ? 'ジャンル特有の単語が少なめです。' : 'ジャンルに合っています。' });
+                    const isSensoryLow = cMetrics.sensoryScore < 3;
+                    list.push({ label: '五感描写', value: 'Lv.' + cMetrics.sensoryScore, target: 'Lv.3以上推奨', statusColor: isSensoryLow ? 'text-error' : 'text-success', badge: isSensoryLow ? 'badge-error' : 'badge-success', msg: isSensoryLow ? '描写を足しましょう。' : '情景が浮かびます。' });
+                    list.push({ label: '平均文長', value: Math.round(avgLen) + '文字', target: `${params.targetLen}文字以下`, statusColor: avgLen > params.targetLen + 10 ? 'text-error' : 'text-success', badge: avgLen > params.targetLen + 10 ? 'badge-error' : 'badge-ghost', msg: avgLen > params.targetLen + 10 ? '長すぎます。' : '適正です。' });
+                    adviceList.value = list;
+
+                    showToast('解析完了！', 'alert-success');
+                    await nextTick();
+                    renderCharts();
+                    document.getElementById('results-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } catch (e) { console.error(e); showToast('エラーが発生しました', 'alert-error'); } finally { isProcessing.value = false; }
+            };
+
+            // Charts
+            const updateChartTheme = () => {
+                const color = isDarkMode.value ? '#cbd5e1' : '#475569';
+                const grid = isDarkMode.value ? '#334155' : '#e2e8f0';
+                [radarChart, sentimentChart].forEach(c => {
+                    if(c) {
+                        if(c.options.scales.r) c.options.scales.r.pointLabels.color = color;
+                        if(c.options.scales.y) { c.options.scales.y.grid.color = grid; c.options.scales.y.ticks.color = color; }
+                        c.update();
+                    }
+                });
+            };
+
+            const renderCharts = () => {
+                if (radarChart) radarChart.destroy();
+                if (sentimentChart) sentimentChart.destroy();
+                const ctxR = document.getElementById('radarChart'), ctxS = document.getElementById('sentimentChart');
+                if(!ctxR || !ctxS) return;
+                const color = isDarkMode.value ? '#cbd5e1' : '#475569';
+                const grid = isDarkMode.value ? '#334155' : '#e2e8f0';
+
+                radarChart = new Chart(ctxR, {
+                    type: 'radar',
+                    data: { labels: ['形式点', '可読性', '会話・没入', '内容・展開', '語彙力'], datasets: [{ label: '評価スコア', data: stats.value.metrics, backgroundColor: 'rgba(255, 99, 132, 0.2)', borderColor: '#ff6384', borderWidth: 2, pointBackgroundColor: '#ff6384' }] },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 0, max: 100, ticks: { display: false }, grid: { color: grid }, pointLabels: { color: color, font: { size: 12 } } } }, plugins: { legend: { display: false } } }
+                });
+
+                sentimentChart = new Chart(ctxS, {
+                    type: 'line',
+                    data: { labels: stats.value.contentMetrics.sentimentTimeline.map((_, i) => i === 0 ? '序盤' : i === stats.value.contentMetrics.sentimentTimeline.length-1 ? '結末' : ''), datasets: [{ label: '感情値', data: stats.value.contentMetrics.sentimentTimeline, borderColor: '#3b82f6', backgroundColor: (ctx) => { const g = ctx.chart.ctx.createLinearGradient(0,0,0,200); g.addColorStop(0,'rgba(59,130,246,0.5)'); g.addColorStop(1,'rgba(59,130,246,0.0)'); return g; }, fill: true, tension: 0.4, pointRadius: 0 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: true, grid: { color: grid, drawBorder: false }, ticks: { display: false }, title: { display: true, text: 'ポジティブ ⇄ ネガティブ', color: color } }, x: { grid: { display: false }, ticks: { color: color } } } }
+                });
+            };
+
+            // Share Functions
+            const shareToX = () => {
+                if (!stats.value) return;
+                const text = `【Web小説分析結果】\n🖊 ジャンル：${getGenreName(selectedGenre.value)}\n🏆 ランク：${stats.value.rank}（${stats.value.title}）\n❤️ 感情起伏：${stats.value.contentMetrics.emotionalRange}\n✨ 五感描写：Lv.${stats.value.contentMetrics.sensoryScore}\n\nあなたの小説をAIが無料診断！`.trim();
+                const url = window.location.href;
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}&hashtags=NarouAnalyzerPro,web小説,執筆`, '_blank');
+            };
+
+            const copyResult = async () => {
+                if (!stats.value) return;
+                const text = `Narou Analyzer Pro 診断結果\nジャンル：${getGenreName(selectedGenre.value)}\n総合評価：${stats.value.rank} (${stats.value.title})\n\nAI講評：\n${stats.value.comment}\n\n#NarouAnalyzerPro\n${window.location.href}`;
+                try { await navigator.clipboard.writeText(text); showToast('結果をコピーしました', 'alert-success'); } catch (err) { showToast('コピーに失敗しました', 'alert-error'); }
+            };
+
+            const rankGradient = computed(() => stats.value ? (stats.value.rank === 'S' ? 'from-amber-400 to-orange-600' : stats.value.rank === 'A' ? 'from-pink-500 to-rose-500' : stats.value.rank === 'B' ? 'from-blue-500 to-cyan-500' : 'from-gray-500 to-gray-700') : '');
+            const rankColorClass = computed(() => stats.value ? (stats.value.rank === 'S' ? 'bg-orange-500' : stats.value.rank === 'A' ? 'bg-pink-500' : stats.value.rank === 'B' ? 'bg-info' : 'bg-gray-400') : '');
+            const rankBadgeColor = computed(() => stats.value ? (stats.value.rank === 'S' ? 'badge-warning' : stats.value.rank === 'A' ? 'badge-secondary' : stats.value.rank === 'B' ? 'badge-info' : 'badge-ghost') : '');
+
+            return { inputText, isProcessing, stats, adviceList, analyzeText, rankGradient, rankColorClass, rankBadgeColor, isDarkMode, toastMessage, toastType, toastIcon, selectedGenre, genreDefinitions, currentGenreSettings, getGenreName, shareToX, copyResult };
+        }
+    }).mount('#app');
+</script>
+
+<style>
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+    @keyframes bounceIn { 0% { opacity: 0; transform: scale(0.9) translateY(10px); } 70% { opacity: 1; transform: scale(1.05) translateY(-2px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+    .animate-bounce-in { animation: bounceIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+</style>
+</body>
+</html>
