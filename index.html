@@ -21,25 +21,30 @@
         
         [v-cloak] { display: none; }
         
+        /* Glassmorphism adjustments */
         .glass-panel {
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
         [data-theme="night"] .glass-panel {
-            background: rgba(30, 41, 59, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(15, 23, 42, 0.85);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .animate-fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Animation for toast */
+        .animate-bounce-in { animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+        @keyframes bounceIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body class="min-h-screen bg-base-200 flex flex-col">
 
 <div id="app" v-cloak class="flex-grow">
-    <header class="navbar glass-panel sticky top-0 z-50 shadow-sm px-4">
+    <header class="navbar glass-panel sticky top-0 z-50 px-4 transition-colors duration-300">
         <div class="flex-1">
             <h1 class="text-xl md:text-2xl font-black text-primary flex items-center gap-2 tracking-tighter cursor-pointer" onclick="window.scrollTo(0,0)">
                 <i class="ph-fill ph-pen-nib-straight"></i> 
@@ -59,9 +64,9 @@
         <section class="lg:col-span-4 space-y-4">
             <div class="card bg-base-100 shadow-lg">
                 <div class="card-body p-5">
-                    <label class="label pt-0"><span class="label-text font-bold text-gray-500">解析ジャンルを選択</span></label>
+                    <label class="label pt-0"><span class="label-text font-bold text-base-content/70">解析ジャンルを選択</span></label>
                     
-                    <select v-model="selectedGenre" class="select select-bordered w-full font-bold text-base bg-base-200/50">
+                    <select v-model="selectedGenre" class="select select-bordered w-full font-bold text-base bg-base-200/50 focus:outline-none focus:border-secondary">
                         <optgroup v-for="(group, groupName) in groupedGenres" :label="groupName" :key="groupName">
                             <option v-for="g in group" :value="g.id" :key="g.id">
                                 {{ g.name }}
@@ -71,13 +76,13 @@
                     
                     <div class="mt-4 text-xs space-y-3">
                         <div class="flex gap-3 items-start p-3 rounded bg-primary/10 text-primary-content">
-                            <i class="ph-fill ph-info text-xl mt-0.5"></i>
+                            <i class="ph-fill ph-info text-xl mt-0.5 text-primary"></i>
                             <div>
-                                <div class="font-bold">{{ currentScoringProfile.name }}</div>
-                                <div class="opacity-80 leading-relaxed mt-1">{{ currentScoringProfile.desc }}</div>
+                                <div class="font-bold text-primary">{{ currentScoringProfile.name }}</div>
+                                <div class="opacity-80 leading-relaxed mt-1 text-base-content">{{ currentScoringProfile.desc }}</div>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-2 text-gray-500 opacity-80">
+                        <div class="grid grid-cols-2 gap-2 text-base-content/60">
                             <div><i class="ph-bold ph-text-aa"></i> 目標文長: {{ currentScoringProfile.targetLen }}文字</div>
                             <div><i class="ph-bold ph-chats"></i> 目標会話: {{ currentScoringProfile.minDialog }}%</div>
                         </div>
@@ -88,10 +93,10 @@
             <div class="card bg-base-100 shadow-xl border-t-4 border-secondary">
                 <div class="card-body p-4 md:p-6">
                     <div class="flex justify-between items-end mb-2">
-                        <h2 class="text-sm font-bold text-gray-500 uppercase tracking-wider">本文入力</h2>
+                        <h2 class="text-sm font-bold text-base-content/70 uppercase tracking-wider">本文入力</h2>
                         <span class="text-xs badge" :class="inputText.length > 2000 ? 'badge-success' : 'badge-ghost'">{{ inputText.length.toLocaleString() }} chars</span>
                     </div>
-                    <textarea v-model="inputText" class="textarea textarea-bordered w-full h-[40vh] lg:h-[60vh] font-mono-jp text-base leading-relaxed resize-none focus:outline-none focus:border-secondary transition-all" :class="{'bg-gray-50': !isDarkMode, 'bg-gray-800': isDarkMode}" placeholder="ここに小説の本文を貼り付けてください。&#10;&#10;各ジャンルの定義に基づいて、会話比率や文体リズム、キーワード含有率などを採点します。"></textarea>
+                    <textarea v-model="inputText" class="textarea textarea-bordered w-full h-[40vh] lg:h-[60vh] font-mono-jp text-base leading-relaxed resize-none focus:outline-none focus:border-secondary transition-all" placeholder="ここに小説の本文を貼り付けてください。&#10;&#10;各ジャンルの定義に基づいて、会話比率や文体リズム、キーワード含有率などを採点します。"></textarea>
                 </div>
             </div>
         </section>
@@ -116,7 +121,7 @@
                     <div class="card-body p-6 md:p-8">
                         <div class="flex flex-col md:flex-row gap-8 items-center">
                             <div class="text-center min-w-[160px] relative">
-                                <div class="text-xs text-gray-400 font-bold mb-1 uppercase tracking-widest">Genre Rank</div>
+                                <div class="text-xs text-base-content/60 font-bold mb-1 uppercase tracking-widest">Genre Rank</div>
                                 <div class="text-9xl font-black leading-none bg-clip-text text-transparent bg-gradient-to-br filter drop-shadow-sm" :class="rankGradient" style="font-family: 'Zen Maru Gothic';">{{ stats.rank }}</div>
                                 <div class="text-3xl font-bold mt-[-10px] text-base-content/50">{{ stats.totalScore.toFixed(0) }}<span class="text-sm">/100</span></div>
                             </div>
@@ -126,12 +131,18 @@
                                     <h3 class="font-bold text-sm mb-2 flex items-center gap-2 text-secondary">
                                         <i class="ph-fill ph-robot"></i> {{ currentScoringProfile.name }}としての評価
                                     </h3>
-                                    <p class="text-sm md:text-base leading-7 whitespace-pre-line">{{ stats.comment }}</p>
+                                    <p class="text-sm md:text-base leading-7 whitespace-pre-line text-base-content">{{ stats.comment }}</p>
                                 </div>
-                                <div class="flex flex-wrap gap-2">
-                                    <div v-for="tag in stats.tags" :key="tag" class="badge badge-outline badge-lg text-xs py-3 px-4 bg-base-100">
-                                        # {{ tag }}
+                                <div class="flex flex-wrap items-center justify-between gap-4">
+                                    <div class="flex flex-wrap gap-2">
+                                        <div v-for="tag in stats.tags" :key="tag" class="badge badge-outline badge-lg text-xs py-3 px-4 bg-base-100">
+                                            # {{ tag }}
+                                        </div>
                                     </div>
+                                    <button @click="shareResult" class="btn btn-sm btn-ghost hover:bg-[#000000] hover:text-white transition-colors gap-2 border border-base-300">
+                                        <i class="ph-fill ph-twitter-logo text-lg"></i>
+                                        Xで結果を共有
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -146,7 +157,7 @@
                                         <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" :class="getScoreBg(metric.score)">{{ metric.rank }}</div>
                                         <div>
                                             <div class="font-bold text-sm">{{ metric.label }}</div>
-                                            <div class="text-[10px] text-gray-500">{{ metric.desc }}</div>
+                                            <div class="text-[10px] text-base-content/60">{{ metric.desc }}</div>
                                         </div>
                                     </div>
                                     <div class="text-xl font-bold font-mono" :class="getScoreColor(metric.score)">{{ metric.score }}</div>
@@ -160,28 +171,28 @@
                     
                     <div class="card bg-base-100 shadow-lg col-span-1 md:col-span-2">
                         <div class="card-body p-5">
-                            <h3 class="font-bold text-sm text-gray-500 flex items-center gap-2">
+                            <h3 class="font-bold text-sm text-base-content/70 flex items-center gap-2">
                                 <i class="ph-fill ph-heartbeat text-pink-500"></i> ストーリー感情曲線
                             </h3>
                             <div class="relative w-full h-[220px]"><canvas id="sentimentChart"></canvas></div>
-                            <div class="text-xs text-center text-gray-400 mt-2">※ ジャンル特性により評価基準は異なります。上：快/勝利/好転 下：不快/ピンチ/悲哀</div>
+                            <div class="text-xs text-center text-base-content/50 mt-2">※ ジャンル特性により評価基準は異なります。上：快/勝利/好転 下：不快/ピンチ/悲哀</div>
                         </div>
                     </div>
 
                     <div class="card bg-base-100 shadow-lg border-l-4 border-warning">
                         <div class="card-body p-0">
-                            <div class="p-4 border-b border-base-200 bg-warning/10"><h3 class="card-title text-sm"><i class="ph-fill ph-warning-circle text-warning"></i> 修正推奨ポイント</h3></div>
+                            <div class="p-4 border-b border-base-200 bg-warning/10"><h3 class="card-title text-sm text-base-content"><i class="ph-fill ph-warning-circle text-warning"></i> 修正推奨ポイント</h3></div>
                             <div class="overflow-y-auto max-h-[300px]">
                                 <table class="table table-sm">
                                     <tbody>
-                                        <tr v-for="item in adviceList" :key="item.label" class="hover:bg-base-50">
+                                        <tr v-for="item in adviceList" :key="item.label" class="hover:bg-base-200/50">
                                             <td class="w-1/3 pl-4 py-3">
                                                 <div class="font-bold text-xs">{{ item.label }}</div>
                                             </td>
                                             <td class="pr-4 py-3">
                                                 <div class="flex items-center gap-2 mb-1">
                                                     <span class="badge badge-sm font-mono" :class="item.statusBadge">{{ item.value }}</span>
-                                                    <span class="text-[10px] text-gray-400">目安:{{ item.target }}</span>
+                                                    <span class="text-[10px] text-base-content/60">目安:{{ item.target }}</span>
                                                 </div>
                                                 <div class="text-xs leading-relaxed opacity-80">{{ item.msg }}</div>
                                             </td>
@@ -194,20 +205,20 @@
 
                     <div class="card bg-base-100 shadow-lg border-l-4 border-info">
                         <div class="card-body p-5">
-                            <h3 class="font-bold text-sm text-gray-500 flex items-center gap-2 mb-4"><i class="ph-fill ph-eye text-info"></i> 五感表現 & キーワード</h3>
+                            <h3 class="font-bold text-sm text-base-content/70 flex items-center gap-2 mb-4"><i class="ph-fill ph-eye text-info"></i> 五感表現 & キーワード</h3>
                             
                             <div class="grid grid-cols-3 gap-2 mb-6">
                                 <div v-for="(val, key) in stats.contentMetrics.senses" :key="key" class="text-center p-2 bg-base-200 rounded-lg">
-                                    <div class="text-[10px] uppercase font-bold text-gray-400 mb-1">{{ key }}</div>
+                                    <div class="text-[10px] uppercase font-bold text-base-content/60 mb-1">{{ key }}</div>
                                     <div class="radial-progress text-xs font-bold text-primary" :style="{'--value': Math.min(100, val*25), '--size': '2.5rem'}">{{ val }}</div>
                                 </div>
                             </div>
 
                             <div class="space-y-2">
-                                <div class="text-xs font-bold text-gray-400">ジャンル重要語・パワーワード</div>
+                                <div class="text-xs font-bold text-base-content/60">ジャンル重要語・パワーワード</div>
                                 <div class="flex flex-wrap gap-1">
-                                    <span v-for="word in stats.contentMetrics.foundKeywords" :key="word" class="badge badge-outline bg-white text-xs py-2">{{ word }}</span>
-                                    <span v-if="stats.contentMetrics.foundKeywords.length === 0" class="text-xs text-gray-400">特になし</span>
+                                    <span v-for="word in stats.contentMetrics.foundKeywords" :key="word" class="badge badge-outline bg-base-100 text-xs py-2">{{ word }}</span>
+                                    <span v-if="stats.contentMetrics.foundKeywords.length === 0" class="text-xs text-base-content/40">特になし</span>
                                 </div>
                             </div>
                         </div>
@@ -232,9 +243,7 @@
 
 <script>
     // --- GENRE DEFINITIONS ---
-    // ご指定の大ジャンル・小ジャンル定義に基づくパラメータ設定
     const GENRE_PARAMS = {
-        // 大ジャンル：恋愛
         'love_isekai': { 
             group: '恋愛', name: '異世界[恋愛]', 
             desc: '恋愛を主題とし、異世界を主な舞台とした作品。',
@@ -249,7 +258,6 @@
             weights: { rhythm: 25, immersion: 40, grammar: 15, story: 20 },
             keywords: ['先輩','後輩','学校','オフィス','結婚','同棲','幼馴染','カフェ','部活']
         },
-        // 大ジャンル：ファンタジー
         'high_fantasy': { 
             group: 'ファンタジー', name: 'ハイファンタジー', 
             desc: '現実世界とは異なる世界を主な舞台とした作品。',
@@ -264,12 +272,11 @@
             weights: { rhythm: 25, immersion: 25, grammar: 25, story: 25 },
             keywords: ['ダンジョン','陰陽師','超能力','妖怪','現代','配信','探索者','ゲート']
         },
-        // 大ジャンル：文芸
         'pure_lit': { 
             group: '文芸', name: '純文学', 
             desc: '芸術性に重きを置いた作品。',
             targetLen: 70, minDialog: 15, 
-            weights: { rhythm: 20, immersion: 20, grammar: 40, story: 20 }, // 文法・構成重視
+            weights: { rhythm: 20, immersion: 20, grammar: 40, story: 20 },
             keywords: ['私','生','死','孤独','故郷','風景','憂鬱','哲学','美']
         },
         'human_drama': { 
@@ -290,31 +297,30 @@
             group: '文芸', name: '推理', 
             desc: '事件等を推理し、謎解きを行う過程を主体とした作品。',
             targetLen: 60, minDialog: 30, 
-            weights: { rhythm: 20, immersion: 15, grammar: 35, story: 30 }, // 論理性重視
+            weights: { rhythm: 20, immersion: 15, grammar: 35, story: 30 },
             keywords: ['トリック','犯人','証拠','密室','刑事','探偵','アリバイ','動機','殺人']
         },
         'horror': { 
             group: '文芸', name: 'ホラー', 
             desc: '読者に恐怖感を与えることを主題とした作品。',
             targetLen: 40, minDialog: 20, 
-            weights: { rhythm: 30, immersion: 40, grammar: 10, story: 20 }, // 五感没入重視
+            weights: { rhythm: 30, immersion: 40, grammar: 10, story: 20 },
             keywords: ['幽霊','呪い','血','闇','悲鳴','死','狂気','ストーカー','怪異']
         },
         'action': { 
             group: '文芸', name: 'アクション', 
             desc: '戦闘描写、アクションシーンを主体とした作品。',
             targetLen: 35, minDialog: 15, 
-            weights: { rhythm: 50, immersion: 20, grammar: 10, story: 20 }, // リズム(短文)重視
+            weights: { rhythm: 50, immersion: 20, grammar: 10, story: 20 },
             keywords: ['銃','剣','拳','爆発','衝撃','回避','追跡','敵','戦場']
         },
         'comedy': { 
             group: '文芸', name: 'コメディー', 
             desc: '読者を笑わせることを主題とした作品。',
             targetLen: 40, minDialog: 55, 
-            weights: { rhythm: 40, immersion: 20, grammar: 10, story: 30 }, // テンポ重視
+            weights: { rhythm: 40, immersion: 20, grammar: 10, story: 30 },
             keywords: ['爆笑','ツッコミ','勘違い','変人','ドタバタ','カオス','不幸']
         },
-        // 大ジャンル：SF
         'vr_game': { 
             group: 'SF', name: 'VRゲーム', 
             desc: 'VR技術を利用したゲームが主体となる作品。',
@@ -343,19 +349,18 @@
             weights: { rhythm: 35, immersion: 35, grammar: 10, story: 20 },
             keywords: ['ウイルス','感染','ゾンビ','地震','崩壊','脱出','サバイバル','食料']
         },
-        // 大ジャンル：その他
         'fairytale': { 
             group: 'その他', name: '童話', 
             desc: '幼年、児童に向けた内容の読み物。',
             targetLen: 30, minDialog: 30, 
-            weights: { rhythm: 40, immersion: 30, grammar: 10, story: 20 }, // 漢字率低め推奨
+            weights: { rhythm: 40, immersion: 30, grammar: 10, story: 20 },
             keywords: ['森','動物','魔法','王様','お姫様','冒険','友達','約束']
         },
         'poetry': { 
             group: 'その他', name: '詩', 
             desc: '言葉に美と響きを乗せて想いを表現している作品。',
             targetLen: 20, minDialog: 0, 
-            weights: { rhythm: 70, immersion: 30, grammar: 0, story: 0 }, // リズム特化
+            weights: { rhythm: 70, immersion: 30, grammar: 0, story: 0 },
             keywords: ['風','空','心','愛','夢','光','影','花','時']
         },
         'essay': { 
@@ -369,16 +374,14 @@
             group: 'その他', name: 'リプレイ', 
             desc: 'TRPGのプレイ結果を文章にて記録したもの。',
             targetLen: 40, minDialog: 80, 
-            weights: { rhythm: 30, immersion: 50, grammar: 10, story: 10 }, // 会話ほぼ100%でもOK
+            weights: { rhythm: 30, immersion: 50, grammar: 10, story: 10 },
             keywords: ['GM','PL','判定','ダイス','成功','失敗','クリティカル','ファンブル']
         }
     };
 
-    // 辞書データ（共通）
     const DICT = {
         pos: ['好き','愛','嬉しい','楽しい','幸せ','笑','希望','成功','美しい','最高','安心','温かい','喜び','勝利','素敵','感謝','仲間','絆','救い','優雅','可憐','爽快','尊い','ドキドキ','ワクワク','至福','伝説','最強','無双','圧倒','拍手','認め','信頼','抱擁','キス','結婚','達成','獲得','解決','回復','快感'],
         neg: ['嫌い','憎','悲しい','辛い','苦しい','涙','絶望','失敗','醜い','最悪','不安','冷たい','怒り','敗北','死','殺','痛','怖い','恐怖','孤独','裏切り','叫','血','傷','呪','別れ','失う','奪','地獄','全滅','クソ','ゴミ','愚か','無駄','後悔','残念','残酷','無理','限界','絶叫','悪夢'],
-        negations: ['ない','ず','ぬ','ません','ありません'],
         senses: {
             sight: ['見る','見え','視線','色','赤','青','黒','白','輝','暗','光','姿','景色','瞳','鮮','映','金','銀','紫','眺','目撃','髪','肌','輪郭','影','闇','閃光'],
             sound: ['聞','音','声','響','静寂','叫','囁','歌','騒','耳','轟','メロディ','悲鳴','ざわ','沈黙','爆音','足音','鐘','言葉','怒号','吐息','歓声'],
@@ -386,7 +389,7 @@
         }
     };
 
-    const { createApp, ref, computed, nextTick } = Vue;
+    const { createApp, ref, computed, watch, nextTick } = Vue;
 
     createApp({
         setup() {
@@ -401,7 +404,15 @@
             let radarChart = null;
             let sentimentChart = null;
 
-            // ジャンルのグループ化
+            // ダークモード監視: 変数が変わったらHTMLタグの属性を変更する
+            watch(isDarkMode, (val) => {
+                document.documentElement.setAttribute('data-theme', val ? 'night' : 'winter');
+                if(stats.value) {
+                    // チャートの再描画（グリッド色などの反映のため）
+                    nextTick(() => renderCharts(stats.value));
+                }
+            }, { immediate: true });
+
             const groupedGenres = computed(() => {
                 const groups = {};
                 for (const key in GENRE_PARAMS) {
@@ -434,6 +445,20 @@
                 return r==='SS'?'from-yellow-300 via-orange-400 to-red-500': r==='S'?'from-yellow-400 to-orange-500': r==='A'?'from-pink-400 to-rose-500': r==='B'?'from-cyan-400 to-blue-500': 'from-gray-400 to-slate-500';
             });
 
+            // SNS共有機能
+            const shareResult = () => {
+                if (!stats.value) return;
+                const score = stats.value.totalScore.toFixed(0);
+                const rank = stats.value.rank;
+                const genre = currentScoringProfile.value.name;
+                
+                const text = `【Narou Analyzer Pro V4】\nジャンル：${genre}\n評価：${rank}ランク (${score}/100)\n\n#NarouAnalyzer`;
+                const url = window.location.href; // 現在のURL
+                
+                const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+                window.open(shareUrl, '_blank');
+            };
+
             // --- Analysis Logic ---
             const analyzeText = async () => {
                 if (inputText.value.length < 10) return;
@@ -445,11 +470,9 @@
                     const genreKey = selectedGenre.value;
                     const params = GENRE_PARAMS[genreKey];
 
-                    // --- Pre-processing ---
                     const lines = text.split('\n');
                     const cleanSentences = (text.match(/[^。！？\n]+[。！？]?/g) || []).map(s => s.trim()).filter(s => s.length > 1);
 
-                    // --- Metrics ---
                     // 1. 文末リズム & 密度
                     let wallCount = 0, currentBlockLines = 0, currentBlockChars = 0;
                     lines.forEach(l => {
@@ -458,7 +481,6 @@
                         else {
                             currentBlockLines++;
                             currentBlockChars += t.length;
-                            // 詩や純文学などは壁判定を緩和、Web小説(異世界など)は厳しく
                             const limitLines = (genreKey === 'pure_lit' || genreKey === 'essay') ? 10 : 5;
                             const limitChars = (genreKey === 'pure_lit' || genreKey === 'essay') ? 500 : 250;
                             if (currentBlockLines > limitLines || currentBlockChars > limitChars) wallCount++;
@@ -479,7 +501,7 @@
                         if (endings[i] === endings[i-1]) { combo++; if (combo >= 3) repetitionScore -= (combo * 2); }
                         else combo = 1;
                     }
-                    if (genreKey === 'poetry') repetitionScore = 100; // 詩は繰り返しも味
+                    if (genreKey === 'poetry') repetitionScore = 100;
 
                     // 3. 統計データ
                     const lengths = cleanSentences.map(s => s.length);
@@ -520,17 +542,15 @@
                     let rhythmScore = 100;
                     const lenDiff = Math.abs(avgLen - params.targetLen);
                     if (lenDiff > 15) rhythmScore -= (lenDiff - 10);
-                    // 漢字率補正
                     if (genreKey === 'fairytale' && kanjiRatio > 20) rhythmScore -= (kanjiRatio - 20) * 2;
                     else if (kanjiRatio > 50) rhythmScore -= (kanjiRatio - 50);
 
-                    // リプレイは会話率が高くてもペナルティなし、むしろ推奨
                     let immScore = 50;
                     let dialogScore = 100;
                     if (genreKey !== 'replay') {
                         dialogScore -= Math.abs(dialogRatio - params.minDialog);
                     } else {
-                        if (dialogRatio < 50) dialogScore = dialogRatio; // リプレイは会話少ないと減点
+                        if (dialogRatio < 50) dialogScore = dialogRatio;
                     }
                     
                     const senseDensity = (Object.values(senseCounts).reduce((a,b)=>a+b,0) / (text.length/1000)) * 25;
@@ -541,17 +561,15 @@
 
                     let storyScore = 50 + (emotionRange * 4) + Math.min(20, foundKeywords.size * 5);
                     
-                    // ウェイト適用
                     const w = params.weights;
                     let total = ((rhythmScore * w.rhythm) + (immScore * w.immersion) + (grammarScore * w.grammar) + (storyScore * w.story)) / 100;
                     
                     if (foundKeywords.size >= 3) total += 3;
-                    if (wallCount === 0 && genreKey !== 'poetry') total += 2; // 詩は改行多いので判定除外気味に
+                    if (wallCount === 0 && genreKey !== 'poetry') total += 2;
                     total = Math.max(0, Math.min(100, total));
 
                     const rank = total >= 90 ? 'SS' : total >= 80 ? 'S' : total >= 70 ? 'A' : total >= 55 ? 'B' : total >= 40 ? 'C' : 'D';
 
-                    // --- Output Data Construction ---
                     const tags = [];
                     if (rhythmScore > 80) tags.push("リズム感◎");
                     if (foundKeywords.size > 2) tags.push("ジャンル要素あり");
@@ -625,7 +643,7 @@
                 });
             };
 
-            return { inputText, selectedGenre, groupedGenres, isProcessing, stats, adviceList, isDarkMode, toastMessage, toastType, toastIcon, currentScoringProfile, analyzeText, getScoreColor, getScoreBg, rankColorClass, rankGradient };
+            return { inputText, selectedGenre, groupedGenres, isProcessing, stats, adviceList, isDarkMode, toastMessage, toastType, toastIcon, currentScoringProfile, analyzeText, getScoreColor, getScoreBg, rankColorClass, rankGradient, shareResult };
         }
     }).mount('#app');
 </script>
