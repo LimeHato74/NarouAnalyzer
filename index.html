@@ -249,8 +249,6 @@
         }
     };
     
-    // 定義: ジャンルごとの設定
-    // type: 評価基準プロファイル (light, std, heavy, dialogue_focus, etc)
     const GENRE_PARAMS = {
         'isekai':       { name: '異世界(なろう系)', type: 'light_novel', keywords: 'isekai', desc: 'テンポとカタルシス重視' },
         'real_love':    { name: '現代恋愛', type: 'romance', keywords: 'real_love', desc: '感情の揺れ動きと会話' },
@@ -266,51 +264,50 @@
         'essay':        { name: 'エッセイ', type: 'standard', keywords: null, desc: '構成と言葉選び' }
     };
 
-    // 評価プロファイル（ここでジャンルごとの採点基準を大きく変える）
-    // weights: { form: 文法/形式, read: 可読性, imm: 没入感/会話, cont: 内容/描写 } 合計100になるように
+    // 評価プロファイル（厳格化：ペナルティ係数を強化）
     const SCORING_PROFILES = {
         light_novel: { 
-            targetLen: 35, lenPenalty: 2.5, minDialog: 25, 
+            targetLen: 35, lenPenalty: 4.0, minDialog: 25, 
             focus: 'テンポ・会話',
-            weights: { form: 10, read: 40, imm: 40, cont: 10 } 
+            weights: { form: 15, read: 35, imm: 35, cont: 15 } 
         },
         romance: { 
-            targetLen: 40, lenPenalty: 1.5, minDialog: 30, 
+            targetLen: 40, lenPenalty: 3.0, minDialog: 30, 
             focus: '会話・感情',
-            weights: { form: 10, read: 20, imm: 40, cont: 30 } 
+            weights: { form: 15, read: 25, imm: 35, cont: 25 } 
         },
         epic: { 
-            targetLen: 60, lenPenalty: 1.0, minDialog: 10, 
+            targetLen: 60, lenPenalty: 2.0, minDialog: 10, 
             focus: '描写・世界観',
-            weights: { form: 20, read: 20, imm: 10, cont: 50 } 
+            weights: { form: 25, read: 25, imm: 10, cont: 40 } 
         },
         literature: { 
-            targetLen: 65, lenPenalty: 0.5, minDialog: 5, 
+            targetLen: 65, lenPenalty: 1.5, minDialog: 5, 
             focus: '表現力・五感',
-            weights: { form: 20, read: 10, imm: 10, cont: 60 } 
+            weights: { form: 30, read: 10, imm: 10, cont: 50 } 
         },
         logic: { 
-            targetLen: 55, lenPenalty: 1.2, minDialog: 20, 
+            targetLen: 55, lenPenalty: 2.5, minDialog: 20, 
             focus: '構成・キーワード',
             weights: { form: 30, read: 20, imm: 10, cont: 40 } 
         },
         atmosphere: { 
-            targetLen: 45, lenPenalty: 1.2, minDialog: 15, 
+            targetLen: 45, lenPenalty: 2.5, minDialog: 15, 
             focus: '雰囲気・五感',
-            weights: { form: 10, read: 20, imm: 10, cont: 60 } 
+            weights: { form: 15, read: 20, imm: 10, cont: 55 } 
         },
         action: { 
-            targetLen: 30, lenPenalty: 3.0, minDialog: 10, 
+            targetLen: 30, lenPenalty: 5.0, minDialog: 10, 
             focus: '疾走感',
-            weights: { form: 10, read: 50, imm: 10, cont: 30 } 
+            weights: { form: 15, read: 45, imm: 10, cont: 30 } 
         },
         comedy: { 
-            targetLen: 30, lenPenalty: 2.0, minDialog: 50, 
+            targetLen: 30, lenPenalty: 4.0, minDialog: 45, 
             focus: '会話の勢い',
-            weights: { form: 5, read: 30, imm: 60, cont: 5 } 
+            weights: { form: 10, read: 30, imm: 55, cont: 5 } 
         },
         standard: { 
-            targetLen: 45, lenPenalty: 1.5, minDialog: 20, 
+            targetLen: 45, lenPenalty: 3.0, minDialog: 20, 
             focus: 'バランス',
             weights: { form: 25, read: 25, imm: 25, cont: 25 } 
         }
@@ -331,7 +328,6 @@
             let radarChart = null;
             let sentimentChart = null;
 
-            // UI用グルーピング
             const genreDefinitions = {
                 'トレンド': [ { id: 'isekai', name: '異世界(なろう系)' }, { id: 'real_love', name: '現代恋愛' }, { id: 'comedy', name: 'ラブコメ・コメディー' } ],
                 'ファンタジー': [ { id: 'high_fantasy', name: 'ハイファンタジー' }, { id: 'low_fantasy', name: 'ローファンタジー' }, { id: 'action', name: 'アクション・バトル' } ],
@@ -342,7 +338,6 @@
             const currentGenreSettings = computed(() => GENRE_PARAMS[selectedGenre.value] || GENRE_PARAMS['human']);
             const currentScoringProfile = computed(() => SCORING_PROFILES[currentGenreSettings.value.type] || SCORING_PROFILES['standard']);
 
-            // Watchers & Helpers
             watch(isDarkMode, (newVal) => {
                 document.documentElement.setAttribute('data-theme', newVal ? 'night' : 'winter');
                 updateChartTheme();
@@ -366,7 +361,6 @@
                 return 'text-error';
             };
 
-            // --- Analysis Core Logic ---
             const analyzeContent = (tokens, genreKey) => {
                 let posScore = 0, negScore = 0;
                 let senses = { sight: 0, sound: 0, touch: 0 };
@@ -375,7 +369,6 @@
                 const sentimentTimeline = [];
                 let currentChunkScore = 0;
                 
-                // チャンク分割（感情曲線の粒度）
                 const chunkSize = Math.max(10, Math.ceil(tokens.length / 20));
                 const targetGenreKey = GENRE_PARAMS[genreKey].keywords;
                 const genreWords = targetGenreKey ? DICTIONARIES.genres[targetGenreKey] : [];
@@ -401,33 +394,82 @@
                     }
                 });
 
-                // スムージング
                 const smoothedTimeline = sentimentTimeline.map((val, i, arr) => {
                     const prev = arr[i-1] || val;
                     const next = arr[i+1] || val;
                     return (prev + val + next) / 3;
                 });
 
-                // 五感スコア算出
+                // 五感スコア算出（厳しく調整）
                 const totalSenses = senses.sight + senses.sound + senses.touch;
-                const sensoryRatio = (totalSenses / tokens.length) * 1000; // 頻度
-                // 描写重視ジャンルなら基準を厳しく、そうでなければ甘く
+                const sensoryRatio = (totalSenses / Math.max(1, tokens.length)) * 1000;
                 const isLit = GENRE_PARAMS[genreKey].type === 'literature' || GENRE_PARAMS[genreKey].type === 'atmosphere';
-                const sensoryScore = Math.min(10, Math.ceil(sensoryRatio / (isLit ? 1.5 : 0.8)));
+                // 以前より基準を厳しく：短い文章で稼ぎにくくする
+                const sensoryScore = Math.min(10, Math.ceil(sensoryRatio / (isLit ? 2.5 : 1.5)));
 
                 return {
                     sentimentTimeline: smoothedTimeline,
                     senses,
-                    sensoryScore, // 0-10 scale
+                    sensoryScore, 
                     genreMatchCount,
                     foundKeywords: Array.from(foundKeywords).slice(0, 10)
                 };
             };
 
+            // 新機能：文末重複チェック
+            const checkRepetition = (sentences) => {
+                let penalty = 0;
+                let streak = 0;
+                let lastEnd = '';
+                
+                // 簡易的な文末取得（「〜た。」「〜る。」など）
+                const endings = sentences.map(s => {
+                    const match = s.match(/[ぁ-んァ-ヶ]+[。！？]/);
+                    return match ? match[0].slice(-2) : null; 
+                });
+
+                for (let i = 1; i < endings.length; i++) {
+                    if (endings[i] && endings[i] === endings[i-1]) {
+                        streak++;
+                        if (streak >= 2) penalty += 5; // 3回連続で減点開始
+                    } else {
+                        streak = 0;
+                    }
+                }
+                return Math.min(40, penalty); // 最大40点減点
+            };
+
+            // 新機能：Web小説マナーチェック
+            const checkFormat = (text) => {
+                let penalty = 0;
+                const msgs = [];
+                
+                // 感嘆符の後のスペース漏れ (!?のあとに空白がない)
+                if (/[！？](?![ \u3000\n」])/.test(text)) {
+                    penalty += 10;
+                    msgs.push('感嘆符(!?)の後に空白を入れるのがWeb小説の定石です。');
+                }
+                // 三点リーダーの誤用
+                if (/\.\.\.|・・・|…(?![…])|(?<![…])…/.test(text)) {
+                    // 「…」が奇数個、または「...」「・・・」を使用
+                    if (!/……/.test(text)) {
+                        penalty += 5;
+                        msgs.push('三点リーダーは「……」のように2つ重ねるのが一般的です。');
+                    }
+                }
+                // 句読点の誤用（閉じ括弧の前の句点）
+                if (/。[」』]/.test(text)) {
+                    penalty += 5;
+                    msgs.push('会話文の閉じ括弧の前に句点（。）は不要です。');
+                }
+
+                return { penalty: Math.min(30, penalty), msgs };
+            };
+
             const analyzeText = async () => {
                 if (inputText.value.length < 10) return;
                 isProcessing.value = true;
-                await new Promise(r => setTimeout(r, 600)); // UX Wait
+                await new Promise(r => setTimeout(r, 600));
 
                 try {
                     const text = inputText.value;
@@ -435,7 +477,6 @@
                     const genreDef = GENRE_PARAMS[genreKey];
                     const profile = SCORING_PROFILES[genreDef.type] || SCORING_PROFILES['standard'];
 
-                    // Tokenize (簡易形態素解析)
                     let tokens = [];
                     if (window.Intl && Intl.Segmenter) {
                         const segmenter = new Intl.Segmenter('ja', { granularity: 'word' });
@@ -443,62 +484,70 @@
                     } else { tokens = text.split(/[\s\u3000、。！？\(\)「」]+/); }
                     
                     const lines = text.split('\n');
-                    const sentences = text.split(/[。！？]/).filter(s => s.trim().length > 0);
+                    const sentences = text.split(/[。！？\n]/).filter(s => s.trim().length > 0);
                     
-                    // Basic Metrics
                     const avgLen = sentences.reduce((a,b)=>a+b.length,0) / (sentences.length || 1);
-                    const blankRatio = (lines.filter(l => l.trim() === '').length / lines.length) * 100;
-                    const dialogueRatio = ((text.match(/「[^」]+」/g) || []).join('').length / text.length) * 100;
+                    const dialogueRatio = ((text.match(/「[^」]+」/g) || []).join('').length / (text.length || 1)) * 100;
                     const kanjiRatio = ((text.match(/[\u4E00-\u9FFF]/g) || []).length / (text.replace(/\s/g,'').length || 1)) * 100;
                     const cMetrics = analyzeContent(tokens, genreKey);
 
-                    // --- Dynamic Scoring System ---
+                    // --- Dynamic Scoring System (Stricter) ---
                     
-                    // 1. Form Score (文体・形式)
-                    // 漢字含有率や段落構成。読みやすさの基礎。
+                    // 1. Form Score (文体・形式) - 減点方式強化
                     let formScore = 100;
-                    // 漢字が多すぎると減点（ただし純文学などは許容）
                     const maxKanji = profile.type === 'literature' ? 50 : 35;
-                    if (kanjiRatio > maxKanji) formScore -= (kanjiRatio - maxKanji) * 2;
+                    if (kanjiRatio > maxKanji) formScore -= (kanjiRatio - maxKanji) * 3; // 係数強化
+                    
+                    // 新規：文末重複ペナルティ
+                    const repPenalty = checkRepetition(sentences);
+                    formScore -= repPenalty;
+
+                    // 新規：フォーマットペナルティ
+                    const formatCheck = checkFormat(text);
+                    formScore -= formatCheck.penalty;
+
                     formScore = Math.max(0, Math.min(100, formScore));
 
-                    // 2. Readability Score (可読性・リズム)
-                    // 平均文長がターゲットから離れるほど減点。
+                    // 2. Readability Score (可読性) - 許容範囲狭小化
                     let readScore = 100;
                     const lenDiff = Math.abs(avgLen - profile.targetLen);
-                    // 許容範囲(±5文字)を超えた分にペナルティ
-                    if (lenDiff > 5) {
-                        readScore -= (lenDiff - 5) * profile.lenPenalty;
+                    // 許容範囲を±5から±3へ、ペナルティ係数を強化
+                    if (lenDiff > 3) {
+                        readScore -= (lenDiff - 3) * profile.lenPenalty;
                     }
                     readScore = Math.max(0, Math.min(100, readScore));
 
-                    // 3. Immersion Score (没入感・会話・構成)
-                    // 会話比率がジャンルに合っているか。
+                    // 3. Immersion Score (構成)
                     let immScore = 100;
                     if (dialogueRatio < profile.minDialog) {
-                        // 会話が足りない場合減点
-                        immScore -= (profile.minDialog - dialogueRatio) * 1.5;
-                    } else if (profile.type === 'literature' && dialogueRatio > 40) {
-                        // 純文学で会話多すぎは減点
-                        immScore -= (dialogueRatio - 40);
+                        immScore -= (profile.minDialog - dialogueRatio) * 2.0; // 減点強化
+                    } 
+                    // 会話文多すぎペナルティ（台本書き対策）
+                    if (genreDef.type !== 'comedy' && dialogueRatio > 80) {
+                        immScore -= (dialogueRatio - 80) * 3;
                     }
                     immScore = Math.max(0, Math.min(100, immScore));
 
-                    // 4. Content Score (内容・描写・ジャンル適合)
-                    let contScore = 60; // 基礎点
-                    // 感情の起伏ボーナス
+                    // 4. Content Score (内容) - 基礎点大幅ダウン
+                    // 以前は60点スタートでしたが、40点スタートに変更。
+                    // 何も書かないと赤点になるように調整。
+                    let contScore = 40; 
+                    
+                    // 感情ボーナス（上限厳格化）
                     const range = Math.max(...cMetrics.sentimentTimeline) - Math.min(...cMetrics.sentimentTimeline);
-                    contScore += Math.min(20, range * 4); 
-                    // 五感描写ボーナス（描写重視ジャンルは必須）
+                    contScore += Math.min(15, range * 3); 
+                    
+                    // 五感ボーナス
                     if (profile.focus.includes('描写') || profile.focus.includes('五感')) {
-                        contScore += cMetrics.sensoryScore * 4; // Max 40
-                        if(cMetrics.sensoryScore < 3) contScore -= 20; // ペナルティ
+                        contScore += cMetrics.sensoryScore * 3; // Max 30
+                        if(cMetrics.sensoryScore < 3) contScore -= 10;
                     } else {
-                        contScore += cMetrics.sensoryScore * 2;
+                        contScore += cMetrics.sensoryScore * 1.5;
                     }
-                    // キーワード適合ボーナス
+                    
+                    // キーワード適合（Max 15点に制限）
                     if (genreDef.keywords) {
-                        contScore += Math.min(20, cMetrics.genreMatchCount * 3);
+                        contScore += Math.min(15, cMetrics.genreMatchCount * 2);
                     }
                     contScore = Math.max(0, Math.min(100, contScore));
 
@@ -512,17 +561,20 @@
                         (contScore * weights.cont)
                     ) / 100;
 
-                    // Rank
-                    let rank = totalScore >= 90 ? 'S' : totalScore >= 75 ? 'A' : totalScore >= 60 ? 'B' : totalScore >= 45 ? 'C' : 'D';
+                    // Rank Thresholds (Strict)
+                    // Sランクを92以上に引き上げ
+                    let rank = totalScore >= 92 ? 'S' : totalScore >= 78 ? 'A' : totalScore >= 60 ? 'B' : totalScore >= 40 ? 'C' : 'D';
                     
                     // Comment Generation
                     let comment = "";
-                    if (totalScore >= 80) {
-                        comment = `素晴らしい執筆力です！\n${getGenreName(genreKey)}として理想的なバランス（${profile.focus}）が実現できています。`;
+                    if (totalScore >= 92) {
+                        comment = `極めて高い完成度です！\n${getGenreName(genreKey)}として文体・構成ともにプロレベルの品質に達しています。`;
+                    } else if (totalScore >= 78) {
+                        comment = `安定した筆力で、読み応えがあります。\nより${profile.focus}を意識すると、さらに上のランクを目指せます。`;
                     } else if (totalScore >= 60) {
-                        comment = `安定した筆力があります。\n${profile.focus}の面で少し改善の余地があるかもしれませんが、読みやすい作品です。`;
+                        comment = `基礎的な文章力は十分です。\n細かい作法や、${profile.focus}のバランスを見直すとより良くなります。`;
                     } else {
-                        comment = `ジャンルの特性（${profile.focus}）を意識してみましょう。\n文の長さや描写のバランスを見直すとより良くなります。`;
+                        comment = `まずはジャンルの基本（${profile.focus}）を押さえましょう。\n形式や文法などの基礎点検から始めるのがおすすめです。`;
                     }
 
                     stats.value = {
@@ -540,8 +592,30 @@
 
                     // Advice Generation
                     const list = [];
-                    // Length Advice
-                    const lenStatus = avgLen > profile.targetLen + 10 ? '長め' : avgLen < profile.targetLen - 15 ? '短め' : '適正';
+                    
+                    // Format Advice (Priority)
+                    if (formatCheck.msgs.length > 0) {
+                         list.push({ 
+                            label: '作法・形式', 
+                            value: '要確認', 
+                            target: 'Web標準', 
+                            statusColor: 'text-error',
+                            msg: formatCheck.msgs[0] // 最初の警告を表示
+                        });
+                    }
+
+                    // Repetition Advice
+                    if (repPenalty > 0) {
+                        list.push({ 
+                            label: '文末の重複', 
+                            value: '単調', 
+                            target: 'リズム感', 
+                            statusColor: 'text-warning',
+                            msg: '同じ語尾（〜た、〜る等）が続いています。体言止めなどを活用しましょう。'
+                        });
+                    }
+
+                    const lenStatus = avgLen > profile.targetLen + 5 ? '長め' : avgLen < profile.targetLen - 5 ? '短め' : '適正';
                     list.push({ 
                         label: '平均文長', 
                         value: Math.round(avgLen) + '文字', 
@@ -550,21 +624,19 @@
                         msg: lenStatus === '長め' ? '一文を短く切るとテンポが出ます。' : lenStatus === '短め' ? '描写を足して深みを出せます。' : '読みやすい長さです。'
                     });
 
-                    // Dialogue Advice
                     const talkStatus = dialogueRatio < profile.minDialog ? '少なめ' : '適正';
                     list.push({ 
                         label: '会話比率', 
                         value: Math.round(dialogueRatio) + '%', 
-                        target: `目安 ${profile.minDialog}%以上`, 
+                        target: `目安 ${profile.minDialog}%`, 
                         statusColor: talkStatus === '適正' ? 'text-success' : 'text-warning',
                         msg: talkStatus === '少なめ' ? `キャラの掛け合い（${profile.focus}）を増やしましょう。` : 'テンポ良い構成です。'
                     });
                     
-                    // Kanji Advice
                     list.push({
                         label: '漢字含有率',
                         value: Math.round(kanjiRatio) + '%',
-                        target: `目安 ${maxKanji}%以下`,
+                        target: `目安 ${maxKanji}%`,
                         statusColor: kanjiRatio > maxKanji ? 'text-error' : 'text-success',
                         msg: kanjiRatio > maxKanji ? '少し硬い印象です。ひらがなを増やしましょう。' : '読みやすいバランスです。'
                     });
