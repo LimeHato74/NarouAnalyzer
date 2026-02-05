@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <title>Narou Analyzer Pro V3 - 形態素解析版</title>
+    <title>Narou Analyzer Pro V3 - GitHub Pages Edition</title>
     <meta name="description" content="Kuromoji.js搭載。プロ仕様のWeb小説執筆支援ツール。">
     
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
@@ -39,7 +39,7 @@
         /* Loading Overlay for Dictionary */
         .loading-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7); z-index: 9999;
+            background: rgba(0,0,0,0.8); z-index: 9999;
             display: flex; flex-direction: column; justify-content: center; items-center: center;
             color: white;
         }
@@ -48,10 +48,17 @@
 <body class="min-h-screen bg-base-200 flex flex-col">
 
 <div id="app" v-cloak class="flex-grow">
-    <div v-if="!tokenizer" class="loading-overlay">
+    <div v-if="!tokenizer && !loadError" class="loading-overlay">
         <div class="loading loading-spinner loading-lg text-primary mb-4"></div>
         <div class="text-xl font-bold">AI辞書データをロード中...</div>
-        <div class="text-sm opacity-70">初回は数秒かかります (約15MB)</div>
+        <div class="text-sm opacity-70 mt-2">初回は数秒かかります (約15MB)</div>
+        <div class="text-xs opacity-50 mt-1">Downloading dictionary from GitHub...</div>
+    </div>
+    
+    <div v-if="loadError" class="loading-overlay">
+        <div class="text-error text-6xl mb-4"><i class="ph-fill ph-warning-octagon"></i></div>
+        <div class="text-xl font-bold text-error">辞書の読み込みに失敗しました</div>
+        <div class="text-sm opacity-70 mt-2 max-w-md text-center">ネットワーク接続を確認するか、リロードしてください。<br>GitHub Pages等のHTTPS環境で実行してください。</div>
     </div>
 
     <header class="navbar glass-panel sticky top-0 z-50 shadow-sm px-4">
@@ -255,7 +262,6 @@
     };
 
     // 極性辞書（プロトタイプ拡張版）
-    // キーは基本形(lemma)でマッチングさせます
     const SENTIMENT_DICT = {
         pos: new Set(['好き','愛','嬉しい','楽しい','幸せ','笑う','希望','成功','美しい','最高','安心','喜ぶ','勝利','素敵','感謝','仲間','絆','救う','優雅','可憐','尊い','至福','最強','信頼','キス','結婚','回復','治癒','食べる','美味しい','光','輝く','憧れる']),
         neg: new Set(['嫌い','憎む','悲しい','辛い','苦しい','闇','涙','絶望','失敗','醜い','最悪','不安','冷たい','怒る','敗北','死ぬ','殺す','痛い','怖い','恐怖','孤独','裏切る','叫ぶ','血','傷つく','呪い','別れ','失う','奪う','地獄','滅ぶ','後悔','残念','残酷','痛恨','殺害','攻撃','敵','不快','狂う'])
@@ -277,6 +283,7 @@
             const stats = ref(null);
             const adviceList = ref([]);
             const isDarkMode = ref(false);
+            const loadError = ref(false);
             
             // Kuromoji Tokenizer
             const tokenizer = ref(null);
@@ -286,10 +293,18 @@
             let sentimentChart = null;
 
             onMounted(() => {
-                // Initialize Kuromoji
-                kuromoji.builder({ dicPath: "https://takuyaa.github.io/kuromoji.js/demo/kuromoji/dict/" }).build((err, _tokenizer) => {
-                    if(err) { console.error(err); alert('辞書のロードに失敗しました'); }
-                    else { tokenizer.value = _tokenizer; console.log('Tokenizer Ready'); }
+                // Initialize Kuromoji with public dictionary path
+                // GitHub Pagesでも動作するように、辞書パスを絶対URLで指定
+                const DIC_URL = "https://takuyaa.github.io/kuromoji.js/demo/kuromoji/dict/";
+                
+                kuromoji.builder({ dicPath: DIC_URL }).build((err, _tokenizer) => {
+                    if(err) { 
+                        console.error('Dictionary Load Error:', err); 
+                        loadError.value = true;
+                    } else { 
+                        tokenizer.value = _tokenizer; 
+                        console.log('Tokenizer Ready'); 
+                    }
                 });
             });
 
@@ -307,20 +322,19 @@
                 return r==='SS'?'from-yellow-300 via-orange-400 to-red-500': r==='S'?'from-yellow-400 to-orange-500': r==='A'?'from-pink-400 to-rose-500': r==='B'?'from-cyan-400 to-blue-500': 'from-gray-400 to-slate-500';
             });
 
-            // --- Main Analysis Logic (Kuromoji Based) ---
+            // --- Main Analysis Logic ---
             const analyzeText = async () => {
                 if (!tokenizer.value || inputText.value.length < 10) return;
                 isProcessing.value = true;
 
-                // 画面描画更新のために少し待つ
-                await new Promise(r => setTimeout(r, 100));
+                await new Promise(r => setTimeout(r, 100)); // UI Refresh
 
                 try {
                     const text = inputText.value;
                     const tokens = tokenizer.value.tokenize(text);
                     const params = currentScoringProfile.value;
 
-                    // 1. 構造解析 (Sentences & Dialogs)
+                    // 1. 構造解析
                     const sentences = [];
                     let currentSentence = [];
                     let inDialog = false;
@@ -332,7 +346,6 @@
                         if (t.surface_form === '」') inDialog = false;
                         if (inDialog && t.surface_form !== '「') dialogCharCount += t.surface_form.length;
 
-                        // 文の区切り判定 (句点、または改行)
                         if (t.surface_form === '。' || t.surface_form === '！' || t.surface_form === '？' || t.surface_form === '\n') {
                             if(currentSentence.length > 0) sentences.push(currentSentence);
                             currentSentence = [];
@@ -340,29 +353,24 @@
                     });
                     if(currentSentence.length>0) sentences.push(currentSentence);
 
-                    // 2. 詳細メトリクス計算
+                    // 2. 詳細メトリクス
                     let totalLength = text.length;
                     let sentenceLengths = sentences.map(s => s.reduce((acc, t) => acc + t.surface_form.length, 0)).filter(l => l > 1);
                     const avgLen = sentenceLengths.reduce((a,b)=>a+b,0) / (sentenceLengths.length || 1);
                     const dialogRatio = (dialogCharCount / totalLength) * 100;
 
-                    // 3. 文末重複チェック (Logic: 最後の助動詞の一致)
+                    // 3. 文末重複チェック
                     let repetitionCount = 0;
                     let prevEndType = "";
                     
                     sentences.forEach(s => {
-                        // 文末の有効なトークンを探す（記号以外）
                         let lastToken = null;
                         for(let i=s.length-1; i>=0; i--){
                             if(s[i].pos !== '記号') { lastToken = s[i]; break; }
                         }
                         if(!lastToken) return;
 
-                        // 簡易判定キー作成 (基本形 + 品詞詳細)
-                        // 例: "た"(助動詞) と "る"(動詞) を区別
                         let endType = lastToken.basic_form; 
-                        
-                        // 特に「た」「だ」「ます」「です」の連続を検知
                         if (lastToken.pos === '助動詞') {
                             if (prevEndType === endType) repetitionCount++;
                         }
@@ -370,7 +378,7 @@
                     });
                     const repetitionScore = Math.max(0, 100 - (repetitionCount * 8));
 
-                    // 4. 品詞比率 & 語彙レベル
+                    // 4. 品詞比率 & 感情
                     let posCounts = { noun:0, verb:0, adj:0, difficult:0 };
                     let senseCounts = { sight:0, sound:0, touch:0 };
                     let sentimentScore = 0;
@@ -383,15 +391,12 @@
                         if(t.pos === '動詞') posCounts.verb++;
                         if(t.pos === '形容詞') posCounts.adj++;
                         
-                        // 難易度判定（漢字の連続数や特定の品詞で簡易判定）
                         if(t.pos === '名詞' && t.surface_form.match(/[一-龠]{2,}/)) posCounts.difficult++;
 
-                        // 感情分析 (基本形マッチング)
                         let score = 0;
                         if(SENTIMENT_DICT.pos.has(t.basic_form)) score = 1;
                         if(SENTIMENT_DICT.neg.has(t.basic_form)) score = -1;
                         
-                        // 五感分析
                         Object.keys(SENSE_WORDS).forEach(k => {
                             if(SENSE_WORDS[k].includes(t.basic_form)) senseCounts[k]++;
                         });
@@ -399,56 +404,46 @@
                         chunkScore += score;
                         if((idx+1) % chunkSize === 0) {
                             sentimentTimeline.push(chunkScore);
-                            chunkScore = 0; // Reset or decay
+                            chunkScore = 0;
                         }
                     });
                     if(chunkScore !== 0) sentimentTimeline.push(chunkScore);
-
-                    // Smooth the timeline
                     sentimentTimeline = smoothArray(sentimentTimeline);
 
-                    const verbness = ((posCounts.verb + posCounts.adj) / (posCounts.noun + 1)) * 100; // 高いほど動的・叙情的
-                    
-                    // 5. 総合スコア計算
-                    // (A) Rhythm (読みやすさ)
+                    const verbness = ((posCounts.verb + posCounts.adj) / (posCounts.noun + 1)) * 100;
+
+                    // 5. 総合スコア
                     let rhythmScore = 100;
-                    rhythmScore -= Math.abs(avgLen - params.targetLen) * 1.2; // 長さ乖離
-                    rhythmScore -= (repetitionCount * 5); // 重複ペナルティ
-                    // 文字の壁判定 (改行頻度)
+                    rhythmScore -= Math.abs(avgLen - params.targetLen) * 1.2;
+                    rhythmScore -= (repetitionCount * 5);
                     const lineBreaks = tokens.filter(t => t.surface_form === '\n').length;
-                    const wallRatio = lineBreaks / (totalLength/100); // 100文字あたりの改行数
+                    const wallRatio = lineBreaks / (totalLength/100);
                     if(wallRatio < 1.0) rhythmScore -= 20;
 
-                    // (B) Immersion (没入感)
                     let immScore = 100;
                     const dialogDiff = Math.abs(dialogRatio - params.minDialog);
                     if(dialogDiff > 10) immScore -= dialogDiff;
                     const totalSenses = senseCounts.sight + senseCounts.sound + senseCounts.touch;
-                    const senseDensity = (totalSenses / (totalLength/1000)) * 25; // 1000文字あたり
+                    const senseDensity = (totalSenses / (totalLength/1000)) * 25;
                     immScore = (immScore + senseDensity) / 2;
 
-                    // (C) Grammar (構成)
                     let gramScore = 100;
                     gramScore = (gramScore + repetitionScore) / 2;
-                    // 漢字率過多チェック
                     const kanjiCount = (text.match(/[一-龠]/g)||[]).length;
                     const kanjiRatio = (kanjiCount/totalLength)*100;
                     if(kanjiRatio > 40) gramScore -= 20;
 
-                    // (D) Content (物語強度)
                     let contScore = 50;
                     const emotionRange = Math.max(...sentimentTimeline) - Math.min(...sentimentTimeline);
                     contScore += emotionRange * 8;
                     contScore = Math.min(100, contScore);
 
-                    // Clamp scores
                     const clamp = n => Math.max(0, Math.min(100, n));
                     rhythmScore = clamp(rhythmScore);
                     immScore = clamp(immScore);
                     gramScore = clamp(gramScore);
                     contScore = clamp(contScore);
 
-                    // Weighted Total
                     const w = params.weights;
                     const total = (
                         (rhythmScore * w.rhythm) + 
@@ -457,10 +452,8 @@
                         (contScore * w.content)
                     ) / 100;
 
-                    // ランク計算
                     let rank = total >= 90 ? 'SS' : total >= 80 ? 'S' : total >= 70 ? 'A' : total >= 55 ? 'B' : 'C';
 
-                    // 6. 結果セット
                     stats.value = {
                         rank,
                         totalScore: total,
@@ -476,11 +469,10 @@
                             sentimentTimeline,
                             senses: senseCounts,
                             posRatio: `名詞:${posCounts.noun} 動詞:${posCounts.verb} 形容詞:${posCounts.adj}`,
-                            verbness: Math.min(100, verbness * 1.5) // Display purpose
+                            verbness: Math.min(100, verbness * 1.5)
                         }
                     };
 
-                    // アドバイス生成
                     generateAdvice({ avgLen, dialogRatio, kanjiRatio, repetitionScore, wallRatio, params });
 
                     nextTick(() => renderCharts(stats.value));
@@ -493,6 +485,7 @@
                 }
             };
 
+            // Helpers
             const smoothArray = (arr) => {
                 if(arr.length < 3) return arr;
                 let res = [];
@@ -503,9 +496,7 @@
                 }
                 return res;
             };
-
             const getRankChar = (s) => s>=80?'S':s>=60?'A':s>=40?'B':'C';
-
             const generateTags = (m) => {
                 let t = [];
                 if(m.rhythmScore > 80) t.push("プロ級のリズム");
@@ -514,24 +505,19 @@
                 if(m.contScore > 80) t.push("エモーショナル");
                 return t;
             };
-
             const generateComment = (rank, params, m) => {
                 let msgs = [];
                 if(rank === 'SS') msgs.push("素晴らしい完成度です！Web小説として非常に高いレベルにあります。");
                 else if(rank === 'S') msgs.push("かなり読みやすく、魅力的な構成です。あと一歩でプロレベルです。");
                 else if(rank === 'C') msgs.push("全体的に修正の余地があります。まずは読みやすさを意識しましょう。");
                 else msgs.push("基本的な構成はできています。細かい部分を調整していきましょう。");
-
                 if(m.repetitionCount > 5) msgs.push("文末が単調（〜た、〜た）になっています。体言止めや現在形を混ぜましょう。");
                 if(m.kanjiRatio > 40) msgs.push("漢字が多すぎて画面が黒く見えます。ひらがなに開くことを検討してください。");
-                
                 return msgs.join('\n');
             };
-
             const generateAdvice = (m) => {
                 const list = [];
                 const p = m.params;
-                
                 list.push({
                     label: '平均文長',
                     value: Math.round(m.avgLen) + '文字',
@@ -539,7 +525,6 @@
                     statusBadge: Math.abs(m.avgLen - p.targetLen) < 15 ? 'badge-success' : 'badge-warning',
                     msg: m.avgLen > p.targetLen + 15 ? '一文が長すぎます。' : '適切な長さです。'
                 });
-
                 list.push({
                     label: '会話比率',
                     value: Math.round(m.dialogRatio) + '%',
@@ -547,7 +532,6 @@
                     statusBadge: m.dialogRatio >= p.minDialog - 5 ? 'badge-success' : 'badge-neutral',
                     msg: m.dialogRatio < p.minDialog ? 'もっと会話を増やしてテンポを上げましょう。' : 'キャラクターの掛け合いが良い配分です。'
                 });
-
                 list.push({
                     label: '文末の連続重複',
                     value: m.repetitionScore > 80 ? 'OK' : '注意',
@@ -555,7 +539,6 @@
                     statusBadge: m.repetitionScore > 80 ? 'badge-success' : 'badge-error',
                     msg: m.repetitionScore > 80 ? 'リズムが良いです。' : '「〜た。」「〜だ。」が続いています。'
                 });
-
                 adviceList.value = list;
             };
 
@@ -568,7 +551,6 @@
                 const gridColor = isDarkMode.value ? '#334155' : '#e2e8f0';
                 const textColor = isDarkMode.value ? '#cbd5e1' : '#64748b';
                 
-                // Radar
                 radarChart = new Chart(ctxRadar, {
                     type: 'radar',
                     data: {
@@ -597,7 +579,6 @@
                     }
                 });
 
-                // Sentiment
                 sentimentChart = new Chart(ctxSentiment, {
                     type: 'bar',
                     data: {
@@ -611,8 +592,8 @@
                             pointRadius: 0,
                             fill: {
                                 target: 'origin',
-                                above: 'rgba(244, 114, 182, 0.1)',   // Area will be red above the origin
-                                below: 'rgba(56, 189, 248, 0.1)'    // And blue below the origin
+                                above: 'rgba(244, 114, 182, 0.1)',
+                                below: 'rgba(56, 189, 248, 0.1)'
                             }
                         }]
                     },
@@ -625,7 +606,7 @@
             };
 
             return {
-                inputText, selectedGenre, isProcessing, stats, adviceList, isDarkMode, 
+                inputText, selectedGenre, isProcessing, stats, adviceList, isDarkMode, loadError,
                 tokenizer, GENRE_PARAMS, analyzeText, getScoreColor, getScoreBg, rankColorClass, rankGradient
             };
         }
