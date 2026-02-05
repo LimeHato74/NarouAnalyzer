@@ -57,6 +57,12 @@
             background: rgba(30, 41, 59, 0.7);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
+        
+        .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .animate-bounce-in { animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+        @keyframes bounceIn { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.05); opacity: 1; } 70% { transform: scale(0.9); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body class="min-h-screen bg-base-200 flex flex-col">
@@ -389,7 +395,9 @@
                 return {
                     sentimentTimeline: smoothedTimeline,
                     senses: { sight: sightCount, sound: soundCount, touch: touchCount },
-                    sensoryScore, genreMatchScore,
+                    sensoryScore,
+                    genreMatchScore,
+                    genreMatch: Math.round(genreMatchScore), // 【修正箇所】テンプレートで参照されているキーを追加
                     foundKeywords: Array.from(foundKeywords).slice(0, 8),
                     emotionalRange: range > 5 ? 'ドラマチック' : range > 2 ? '標準的' : '平坦',
                     rawRange: range
@@ -475,45 +483,83 @@
 
                 radarChart = new Chart(ctxR, {
                     type: 'radar',
-                    data: { labels: ['形式点', '可読性', '会話・没入', '内容・展開', '語彙力'], datasets: [{ label: '評価スコア', data: stats.value.metrics, backgroundColor: 'rgba(255, 99, 132, 0.2)', borderColor: '#ff6384', borderWidth: 2, pointBackgroundColor: '#ff6384' }] },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 0, max: 100, ticks: { display: false }, grid: { color: grid }, pointLabels: { color: color, font: { size: 12 } } } }, plugins: { legend: { display: false } } }
+                    data: {
+                        labels: ['構成力', '可読性', '没入度', '内容'],
+                        datasets: [{
+                            label: '評価スコア',
+                            data: stats.value.metrics.slice(0, 4),
+                            backgroundColor: 'rgba(56, 189, 248, 0.2)',
+                            borderColor: 'rgba(56, 189, 248, 1)',
+                            pointBackgroundColor: 'rgba(56, 189, 248, 1)',
+                        }]
+                    },
+                    options: {
+                        scales: { r: { min: 0, max: 100, pointLabels: { color, font: { size: 12, family: "'Zen Maru Gothic'" } } } },
+                        plugins: { legend: { display: false } }
+                    }
                 });
 
                 sentimentChart = new Chart(ctxS, {
                     type: 'line',
-                    data: { labels: stats.value.contentMetrics.sentimentTimeline.map((_, i) => i === 0 ? '序盤' : i === stats.value.contentMetrics.sentimentTimeline.length-1 ? '結末' : ''), datasets: [{ label: '感情値', data: stats.value.contentMetrics.sentimentTimeline, borderColor: '#3b82f6', backgroundColor: (ctx) => { const g = ctx.chart.ctx.createLinearGradient(0,0,0,200); g.addColorStop(0,'rgba(59,130,246,0.5)'); g.addColorStop(1,'rgba(59,130,246,0.0)'); return g; }, fill: true, tension: 0.4, pointRadius: 0 }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: true, grid: { color: grid, drawBorder: false }, ticks: { display: false }, title: { display: true, text: 'ポジティブ ⇄ ネガティブ', color: color } }, x: { grid: { display: false }, ticks: { color: color } } } }
+                    data: {
+                        labels: stats.value.contentMetrics.sentimentTimeline.map((_, i) => i + 1),
+                        datasets: [{
+                            label: '感情の起伏',
+                            data: stats.value.contentMetrics.sentimentTimeline,
+                            borderColor: 'rgba(236, 72, 153, 1)',
+                            backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                            fill: true, tension: 0.4
+                        }]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        scales: { x: { display: false }, y: { grid: { color: grid }, ticks: { color } } },
+                        plugins: { legend: { display: false } }
+                    }
                 });
             };
 
-            // Share Functions
             const shareToX = () => {
-                if (!stats.value) return;
-                const text = `【Web小説分析結果】\n🖊 ジャンル：${getGenreName(selectedGenre.value)}\n🏆 ランク：${stats.value.rank}（${stats.value.title}）\n❤️ 感情起伏：${stats.value.contentMetrics.emotionalRange}\n✨ 五感描写：Lv.${stats.value.contentMetrics.sensoryScore}\n\nあなたの小説をAIが無料診断！`.trim();
-                const url = window.location.href;
-                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}&hashtags=NarouAnalyzerPro,web小説,執筆`, '_blank');
+                const text = `【Narou Analyzer Pro】私の小説の診断結果はランク「${stats.value.rank}」でした！\n#NarouAnalyzer #Web小説`;
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(location.href)}`, '_blank');
             };
 
             const copyResult = async () => {
-                if (!stats.value) return;
-                const text = `Narou Analyzer Pro 診断結果\nジャンル：${getGenreName(selectedGenre.value)}\n総合評価：${stats.value.rank} (${stats.value.title})\n\nAI講評：\n${stats.value.comment}\n\n#NarouAnalyzerPro\n${window.location.href}`;
-                try { await navigator.clipboard.writeText(text); showToast('結果をコピーしました', 'alert-success'); } catch (err) { showToast('コピーに失敗しました', 'alert-error'); }
+                const text = `【Narou Analyzer Pro】\n総合ランク: ${stats.value.rank} (${stats.value.title})\n講評: ${stats.value.comment}\n`;
+                try {
+                    await navigator.clipboard.writeText(text);
+                    showToast('結果をコピーしました', 'alert-success');
+                } catch (err) { showToast('コピーに失敗しました', 'alert-error'); }
             };
 
-            const rankGradient = computed(() => stats.value ? (stats.value.rank === 'S' ? 'from-amber-400 to-orange-600' : stats.value.rank === 'A' ? 'from-pink-500 to-rose-500' : stats.value.rank === 'B' ? 'from-blue-500 to-cyan-500' : 'from-gray-500 to-gray-700') : '');
-            const rankColorClass = computed(() => stats.value ? (stats.value.rank === 'S' ? 'bg-orange-500' : stats.value.rank === 'A' ? 'bg-pink-500' : stats.value.rank === 'B' ? 'bg-info' : 'bg-gray-400') : '');
-            const rankBadgeColor = computed(() => stats.value ? (stats.value.rank === 'S' ? 'badge-warning' : stats.value.rank === 'A' ? 'badge-secondary' : stats.value.rank === 'B' ? 'badge-info' : 'badge-ghost') : '');
+            const rankColorClass = computed(() => {
+                if (!stats.value) return 'bg-gray-300';
+                return stats.value.rank === 'S' ? 'bg-gradient-to-b from-yellow-400 to-orange-500' :
+                       stats.value.rank === 'A' ? 'bg-gradient-to-b from-pink-400 to-rose-500' :
+                       stats.value.rank === 'B' ? 'bg-gradient-to-b from-blue-400 to-cyan-500' : 'bg-gray-400';
+            });
+            
+            const rankGradient = computed(() => {
+                if (!stats.value) return '';
+                return stats.value.rank === 'S' ? 'from-yellow-400 to-orange-600' :
+                       stats.value.rank === 'A' ? 'from-pink-400 to-rose-600' :
+                       stats.value.rank === 'B' ? 'from-blue-400 to-cyan-600' : 'from-gray-400 to-gray-600';
+            });
+            
+            const rankBadgeColor = computed(() => {
+                if (!stats.value) return '';
+                return stats.value.rank === 'S' ? 'badge-warning text-yellow-900' :
+                       stats.value.rank === 'A' ? 'badge-secondary text-pink-100' :
+                       stats.value.rank === 'B' ? 'badge-info text-blue-100' : 'badge-ghost';
+            });
 
-            return { inputText, isProcessing, stats, adviceList, analyzeText, rankGradient, rankColorClass, rankBadgeColor, isDarkMode, toastMessage, toastType, toastIcon, selectedGenre, genreDefinitions, currentGenreSettings, getGenreName, shareToX, copyResult };
+            return {
+                inputText, selectedGenre, isProcessing, stats, adviceList, analyzeText, genreDefinitions,
+                getGenreName, currentGenreSettings, isDarkMode, shareToX, copyResult,
+                rankColorClass, rankGradient, rankBadgeColor, toastMessage, toastType, toastIcon
+            };
         }
     }).mount('#app');
 </script>
-
-<style>
-    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
-    @keyframes bounceIn { 0% { opacity: 0; transform: scale(0.9) translateY(10px); } 70% { opacity: 1; transform: scale(1.05) translateY(-2px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
-    .animate-bounce-in { animation: bounceIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-</style>
 </body>
 </html>
