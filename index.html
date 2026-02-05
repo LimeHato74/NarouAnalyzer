@@ -551,80 +551,61 @@
                     });
 
                     // Dialogue Advice
-                    const talkStatus = dialogueRatio < profile.minDialog ? '少ない' : '十分';
-                    list.push({
-                        label: '会話比率',
-                        value: Math.round(dialogueRatio) + '%',
-                        target: `目安 ${profile.minDialog}%以上`,
-                        statusColor: talkStatus === '十分' ? 'text-success' : profile.weights.imm > 30 ? 'text-error' : 'text-warning',
-                        msg: talkStatus === '少ない' && profile.weights.imm > 30 ? 'このジャンルはもっと会話が必要です。' : 'バランスは良好です。'
+                    const talkStatus = dialogueRatio < profile.minDialog ? '少なめ' : '適正';
+                    list.push({ 
+                        label: '会話比率', 
+                        value: Math.round(dialogueRatio) + '%', 
+                        target: `目安 ${profile.minDialog}%以上`, 
+                        statusColor: talkStatus === '適正' ? 'text-success' : 'text-warning',
+                        msg: talkStatus === '少なめ' ? `キャラの掛け合い（${profile.focus}）を増やしましょう。` : 'テンポ良い構成です。'
                     });
-
-                    // Sensory Advice
-                    const senseStatus = cMetrics.sensoryScore < 3 ? '不足' : '良好';
+                    
+                    // Kanji Advice
                     list.push({
-                        label: '五感描写',
-                        value: 'Lv.' + cMetrics.sensoryScore,
-                        target: 'Lv.3以上',
-                        statusColor: senseStatus === '良好' ? 'text-success' : profile.weights.cont > 40 ? 'text-error' : 'text-gray-400',
-                        msg: senseStatus === '不足' ? (profile.weights.cont > 40 ? '没入感のため描写を増やしましょう。' : '余裕があれば描写を足しましょう。') : '情景が伝わります。'
+                        label: '漢字含有率',
+                        value: Math.round(kanjiRatio) + '%',
+                        target: `目安 ${maxKanji}%以下`,
+                        statusColor: kanjiRatio > maxKanji ? 'text-error' : 'text-success',
+                        msg: kanjiRatio > maxKanji ? '少し硬い印象です。ひらがなを増やしましょう。' : '読みやすいバランスです。'
                     });
 
                     adviceList.value = list;
 
+                    nextTick(() => {
+                        renderCharts(stats.value);
+                        document.getElementById('results-area').scrollIntoView({ behavior: 'smooth' });
+                    });
+
                     showToast('解析完了！', 'alert-success');
-                    await nextTick();
-                    renderCharts();
-                    document.getElementById('results-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
                 } catch (e) {
                     console.error(e);
-                    showToast('エラーが発生しました', 'alert-error');
+                    showToast('エラーが発生しました。', 'alert-error');
                 } finally {
                     isProcessing.value = false;
                 }
             };
 
-            // --- Charts ---
-            const updateChartTheme = () => {
-                const color = isDarkMode.value ? '#cbd5e1' : '#475569';
-                const grid = isDarkMode.value ? '#334155' : '#e2e8f0';
+            const renderCharts = (data) => {
+                const ctxRadar = document.getElementById('radarChart');
+                const ctxSentiment = document.getElementById('sentimentChart');
                 
-                [radarChart, sentimentChart].forEach(c => {
-                    if(c) {
-                        if(c.options.scales.r) {
-                            c.options.scales.r.pointLabels.color = color;
-                            c.options.scales.r.grid.color = grid;
-                        }
-                        if(c.options.scales.y) { 
-                            c.options.scales.y.grid.color = grid; 
-                            c.options.scales.y.ticks.color = color; 
-                        }
-                        c.update();
-                    }
-                });
-            };
-
-            const renderCharts = () => {
                 if (radarChart) radarChart.destroy();
                 if (sentimentChart) sentimentChart.destroy();
 
-                const ctxRadar = document.getElementById('radarChart');
-                const ctxSent = document.getElementById('sentimentChart');
-                const color = isDarkMode.value ? '#cbd5e1' : '#475569';
-                const grid = isDarkMode.value ? '#334155' : '#e2e8f0';
+                const textColor = isDarkMode.value ? '#cbd5e1' : '#475569';
+                const gridColor = isDarkMode.value ? '#334155' : '#e2e8f0';
 
                 radarChart = new Chart(ctxRadar, {
                     type: 'radar',
                     data: {
-                        labels: stats.value.radarData.map(d => `${d.label}`),
+                        labels: data.radarData.map(d => d.label),
                         datasets: [{
-                            label: 'あなたのスコア',
-                            data: stats.value.radarData.map(d => d.score),
+                            label: 'スコア',
+                            data: data.radarData.map(d => d.score),
                             backgroundColor: 'rgba(56, 189, 248, 0.2)',
                             borderColor: '#38bdf8',
                             pointBackgroundColor: '#38bdf8',
-                            pointHoverBorderColor: '#fff'
                         }]
                     },
                     options: {
@@ -632,24 +613,24 @@
                         maintainAspectRatio: false,
                         scales: {
                             r: {
+                                angleLines: { color: gridColor },
+                                grid: { color: gridColor },
+                                pointLabels: { color: textColor, font: { family: 'Zen Maru Gothic', size: 12 } },
                                 min: 0, max: 100,
-                                ticks: { display: false, stepSize: 20 },
-                                pointLabels: { font: { size: 12, family: "'Zen Maru Gothic'" }, color: color },
-                                grid: { color: grid }
+                                ticks: { display: false }
                             }
                         },
                         plugins: { legend: { display: false } }
                     }
                 });
 
-                const sentData = stats.value.contentMetrics.sentimentTimeline;
-                sentimentChart = new Chart(ctxSent, {
+                sentimentChart = new Chart(ctxSentiment, {
                     type: 'line',
                     data: {
-                        labels: sentData.map((_, i) => i + 1),
+                        labels: data.contentMetrics.sentimentTimeline.map((_, i) => i),
                         datasets: [{
-                            label: '感情曲線',
-                            data: sentData,
+                            label: '感情値',
+                            data: data.contentMetrics.sentimentTimeline,
                             borderColor: '#f472b6',
                             backgroundColor: 'rgba(244, 114, 182, 0.1)',
                             fill: true,
@@ -659,35 +640,42 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
                         scales: {
                             x: { display: false },
-                            y: { grid: { color: grid }, ticks: { color: color } }
-                        }
+                            y: { display: false, grid: { display: false } }
+                        },
+                        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                        elements: { point: { radius: 0 } }
                     }
                 });
             };
 
+            const updateChartTheme = () => {
+                if (stats.value) renderCharts(stats.value);
+            };
+
+            const rankColorClass = computed(() => {
+                if (!stats.value) return 'bg-gray-200';
+                const r = stats.value.rank;
+                return r==='S'?'bg-yellow-400': r==='A'?'bg-pink-400': r==='B'?'bg-blue-400': 'bg-gray-400';
+            });
+            const rankBadgeColor = computed(() => {
+                if (!stats.value) return 'badge-ghost';
+                const r = stats.value.rank;
+                return r==='S'?'badge-warning text-yellow-900': r==='A'?'badge-secondary text-pink-900': r==='B'?'badge-info text-blue-900': 'badge-ghost';
+            });
+            const rankGradient = computed(() => {
+                if (!stats.value) return '';
+                const r = stats.value.rank;
+                return r==='S'?'from-yellow-400 to-orange-500': r==='A'?'from-pink-400 to-rose-500': r==='B'?'from-cyan-400 to-blue-500': 'from-gray-400 to-slate-500';
+            });
+
             return {
-                inputText, selectedGenre, isProcessing, stats, adviceList, isDarkMode,
+                inputText, selectedGenre, isProcessing, stats, adviceList,
+                isDarkMode, toastMessage, toastType, toastIcon,
                 genreDefinitions, currentGenreSettings, currentScoringProfile,
-                analyzeText, getGenreName, toastMessage, toastType, toastIcon,
-                rankColorClass: computed(() => {
-                    if(!stats.value) return '';
-                    const s = stats.value.totalScore;
-                    return s >= 90 ? 'bg-amber-400' : s >= 75 ? 'bg-teal-400' : s >= 60 ? 'bg-blue-400' : 'bg-gray-400';
-                }),
-                rankGradient: computed(() => {
-                    if(!stats.value) return '';
-                    const s = stats.value.totalScore;
-                    return s >= 90 ? 'from-amber-400 to-orange-600' : s >= 75 ? 'from-teal-400 to-emerald-600' : s >= 60 ? 'from-blue-400 to-indigo-600' : 'from-gray-400 to-gray-600';
-                }),
-                rankBadgeColor: computed(() => {
-                    if(!stats.value) return '';
-                    const s = stats.value.totalScore;
-                    return s >= 90 ? 'badge-warning text-white' : s >= 75 ? 'badge-accent text-white' : s >= 60 ? 'badge-info text-white' : 'badge-ghost';
-                }),
-                getScoreColor
+                analyzeText, getGenreName, getScoreColor,
+                rankColorClass, rankBadgeColor, rankGradient
             };
         }
     }).mount('#app');
