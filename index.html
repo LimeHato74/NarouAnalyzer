@@ -5,31 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <title>Narou Analyzer Pro - なろう系Web小説の文体・内容評価スコアリングツール</title>
-    <meta name="description" content="小説家になろう等のWeb小説執筆者向け無料分析ツール。異世界、ファンタジー、恋愛などジャンルに合わせて文体リズム、五感描写、感情曲線をAIが自動採点。ブラウザ完結でセキュリティも安心。">
-    <meta name="keywords" content="なろう系,小説分析,推敲,執筆ツール,感想AI,スコアリング,文体診断,新人賞">
-    <meta property="og:title" content="Web小説分析ツール - Narou Analyzer Pro">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://your-domain.com/">
-    <meta property="og:image" content="https://your-domain.com/ogp.png">
-    <meta property="og:description" content="あなたの小説を「なろう基準」でS〜Cランク判定。感情の起伏や五感描写もグラフ化します。">
-    <meta property="og:site_name" content="Narou Analyzer Pro">
-    <meta name="twitter:card" content="summary_large_image">
-    <link rel="canonical" href="https://your-domain.com/">
-    <link rel="icon" href="/favicon.ico">
-
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "Narou Analyzer Pro",
-      "url": "https://your-domain.com/",
-      "description": "Web小説のテキストを入力すると、ジャンルごとの適正を分析しスコアリングするツール。",
-      "applicationCategory": "UtilityApplication",
-      "operatingSystem": "All",
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "JPY" }
-    }
-    </script>
-
+    <meta name="description" content="小説家になろう等のWeb小説執筆者向け無料分析ツール。異世界、ファンタジー、恋愛などジャンルに合わせて文体リズム、五感描写、感情曲線をAIが自動採点。">
+    
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
@@ -87,20 +64,29 @@
         </div>
     </header>
 
-    <main class="p-4 md:p-8 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 pb-24">
+    <main class="p-4 md:p-8 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 pb-32">
         <section class="lg:col-span-4 space-y-4">
             <div class="card bg-base-100 shadow-lg">
                 <div class="card-body p-4">
                     <label class="label pt-0"><span class="label-text font-bold text-gray-500">執筆ジャンルを選択</span></label>
-                    <select v-model="selectedGenre" class="select select-bordered w-full select-sm md:select-md font-bold">
+                    <select v-model="selectedGenre" class="select select-bordered w-full select-sm md:select-md font-bold text-base">
                         <template v-for="(subGenres, mainGenre) in genreDefinitions" :key="mainGenre">
                             <optgroup :label="mainGenre">
                                 <option v-for="sub in subGenres" :value="sub.id">{{ sub.name }}</option>
                             </optgroup>
                         </template>
                     </select>
-                    <div class="text-xs text-gray-400 mt-1 flex items-center gap-1">
-                        <i class="ph-fill ph-info"></i> <span>{{ currentGenreSettings.description }}</span>
+                    
+                    <div class="mt-3 bg-base-200 p-3 rounded-lg text-xs space-y-2">
+                        <div class="flex items-start gap-2">
+                            <i class="ph-fill ph-info text-primary mt-0.5"></i> 
+                            <span class="font-bold">{{ currentGenreSettings.desc }}</span>
+                        </div>
+                        <div class="divider my-1"></div>
+                        <div class="grid grid-cols-2 gap-2 text-gray-500">
+                            <div><span class="badge badge-xs badge-neutral mr-1">重視</span>{{ currentScoringProfile.focus }}</div>
+                            <div><span class="badge badge-xs badge-ghost mr-1">目標</span>{{ currentScoringProfile.targetLen }}文字/文</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -121,93 +107,98 @@
                 <div class="flex-1 flex flex-col items-center justify-center text-base-content/30 border-2 border-dashed border-base-300 rounded-box p-8 mb-6">
                     <i class="ph ph-brain text-6xl mb-4 animate-pulse"></i>
                     <p class="text-lg font-bold">AI文体診断 & 感情分析</p>
-                    <p class="text-sm mt-2">入力されたテキストは外部に流出しません</p>
+                    <p class="text-sm mt-2">ジャンルごとに最適化された基準で採点します</p>
                 </div>
-                <article class="prose prose-sm md:prose max-w-none bg-base-100 p-6 rounded-xl shadow-sm">
-                    <h3>このツールについて</h3>
-                    <p>Web小説投稿サイト（小説家になろう、カクヨム等）での人気作品傾向に基づき、あなたの小説を解析・スコアリングします。</p>
-                    <ul>
-                        <li><strong>ジャンル別最適化:</strong> 異世界、ファンタジー、恋愛など選択したジャンルに合わせて基準を変更。</li>
-                        <li><strong>感情曲線分析:</strong> 物語の起承転結における感情の盛り上がりをグラフ化。</li>
-                        <li><strong>五感描写チェック:</strong> 没入感を高めるための描写バランスを判定。</li>
-                    </ul>
-                </article>
             </div>
 
             <div v-if="stats" class="space-y-6 animate-fade-in-up">
                 
-                <div class="card bg-base-100 shadow-xl overflow-hidden">
+                <div class="card bg-base-100 shadow-xl overflow-hidden relative">
                     <div class="absolute top-0 left-0 w-2 h-full" :class="rankColorClass"></div>
                     <div class="card-body p-5 md:p-8">
                         <div class="flex flex-col md:flex-row gap-6 items-center">
-                            <div class="text-center md:text-left min-w-[120px]">
-                                <div class="text-xs text-gray-400 font-bold mb-1">総合ランク</div>
-                                <div class="text-8xl font-black leading-none bg-clip-text text-transparent bg-gradient-to-br" :class="rankGradient">{{ stats.rank }}</div>
-                                <div class="badge badge-lg mt-2 font-bold w-full shadow-sm" :class="rankBadgeColor">{{ stats.title }}</div>
+                            <div class="text-center md:text-left min-w-[140px]">
+                                <div class="text-xs text-gray-400 font-bold mb-1">総合スコア</div>
+                                <div class="text-8xl font-black leading-none bg-clip-text text-transparent bg-gradient-to-br" :class="rankGradient">{{ stats.totalScore.toFixed(0) }}</div>
+                                <div class="badge badge-lg mt-2 font-bold w-full shadow-sm" :class="rankBadgeColor">Rank {{ stats.rank }}</div>
                             </div>
                             <div class="flex-1 w-full bg-base-200/50 p-4 rounded-xl border border-base-300 relative">
                                 <i class="ph-fill ph-quotes text-4xl absolute -top-3 -left-2 text-base-content/10"></i>
-                                <h3 class="font-bold text-sm mb-2 flex items-center gap-2"><i class="ph-fill ph-robot text-primary"></i> AI講評</h3>
+                                <h3 class="font-bold text-sm mb-2 flex items-center gap-2"><i class="ph-fill ph-robot text-primary"></i> AI講評 ({{ getGenreName(selectedGenre) }}基準)</h3>
                                 <p class="text-sm md:text-base leading-relaxed opacity-90 whitespace-pre-line">{{ stats.comment }}</p>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-6 pt-6 border-t border-base-200">
-                            <div class="text-center">
-                                <div class="text-xs text-gray-500 mb-1">ジャンル一致度</div>
-                                <div class="font-bold text-xl">{{ stats.contentMetrics.genreMatch }}<span class="text-xs font-normal">%</span></div>
-                            </div>
-                            <div class="text-center border-l border-base-200">
-                                <div class="text-xs text-gray-500 mb-1">五感描写</div>
-                                <div class="font-bold text-xl" :class="stats.contentMetrics.sensoryScore > 5 ? 'text-secondary' : ''">Lv.{{ stats.contentMetrics.sensoryScore }}</div>
-                            </div>
-                            <div class="text-center border-l border-base-200">
-                                <div class="text-xs text-gray-500 mb-1">可読性スコア</div>
-                                <div class="font-bold text-xl">{{ stats.metrics[1].toFixed(0) }}<span class="text-xs font-normal">pt</span></div>
-                            </div>
-                            <div class="text-center border-l border-base-200">
-                                <div class="text-xs text-gray-500 mb-1">感情起伏</div>
-                                <div class="font-bold text-xl text-accent">{{ stats.contentMetrics.emotionalRange }}</div>
+
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-base-200">
+                            <div class="text-center" v-for="(metric, idx) in stats.radarData" :key="idx">
+                                <div class="text-xs text-gray-500 mb-1 flex justify-center items-center gap-1">
+                                    {{ metric.label }}
+                                    <span class="tooltip" :data-tip="'重み: ' + metric.weight + '%'">
+                                        <i class="ph-bold ph-info text-xs text-gray-300"></i>
+                                    </span>
+                                </div>
+                                <div class="radial-progress text-sm font-bold" :class="getScoreColor(metric.score)" :style="{'--value': metric.score, '--size': '3rem'}">{{ metric.score }}</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <button @click="shareToX" class="btn btn-neutral text-white shadow-lg w-full transform transition hover:scale-[1.02]">
-                        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                        <span>結果をポストする</span>
-                    </button>
-                    <button @click="copyResult" class="btn btn-outline bg-base-100 shadow-md w-full">
-                        <i class="ph-bold ph-copy"></i>
-                        <span>結果をコピー</span>
-                    </button>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="card bg-base-100 shadow-lg md:col-span-2">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="card bg-base-100 shadow-lg">
                         <div class="card-body p-4">
-                            <h3 class="font-bold text-sm text-gray-500 flex items-center gap-2"><i class="ph-fill ph-heartbeat text-pink-500"></i> ストーリーの感情曲線</h3>
+                            <h3 class="font-bold text-sm text-gray-500 flex items-center gap-2"><i class="ph-fill ph-heartbeat text-pink-500"></i> ストーリー感情曲線</h3>
                             <div class="relative w-full h-[200px]"><canvas id="sentimentChart"></canvas></div>
                         </div>
                     </div>
                     <div class="card bg-base-100 shadow-lg">
                         <div class="card-body p-4">
-                            <h3 class="font-bold text-sm text-gray-500 flex items-center gap-2"><i class="ph-fill ph-radar"></i> 総合バランス分析</h3>
-                            <div class="relative w-full aspect-square md:aspect-video lg:aspect-square"><canvas id="radarChart"></canvas></div>
+                            <h3 class="font-bold text-sm text-gray-500 flex items-center gap-2"><i class="ph-fill ph-radar"></i> 評価バランス (ジャンル別重み適用)</h3>
+                            <div class="relative w-full h-[200px] flex justify-center"><canvas id="radarChart"></canvas></div>
                         </div>
                     </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="card bg-base-100 shadow-lg">
+                        <div class="card-body p-0">
+                            <div class="p-4 border-b border-base-200 bg-base-50 rounded-t-xl"><h3 class="card-title text-base"><i class="ph-fill ph-check-circle text-success"></i> 改善アドバイス</h3></div>
+                            <div class="overflow-x-auto">
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr v-for="item in adviceList" :key="item.label">
+                                            <td class="font-bold whitespace-nowrap pl-4">{{ item.label }}</td>
+                                            <td class="text-right pr-4">
+                                                <div class="flex flex-col items-end">
+                                                    <span class="font-mono font-bold" :class="item.statusColor">{{ item.value }}</span>
+                                                    <span class="text-[10px] text-gray-400">{{ item.target }}</span>
+                                                </div>
+                                            </td>
+                                            <td class="text-xs text-gray-600 pr-4">{{ item.msg }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="card bg-base-100 shadow-lg">
                         <div class="card-body p-4">
-                            <h3 class="font-bold text-sm text-gray-500 flex items-center gap-2"><i class="ph-fill ph-eye text-teal-500"></i> 五感描写 & ジャンルワード</h3>
-                            <div class="space-y-4 mt-2">
-                                <div><div class="flex justify-between text-xs mb-1"><span>視覚</span><span class="font-bold text-teal-600">Sight</span></div><progress class="progress progress-accent w-full" :value="Math.min(100, stats.contentMetrics.senses.sight * 20)" max="100"></progress></div>
-                                <div><div class="flex justify-between text-xs mb-1"><span>聴覚</span><span class="font-bold text-blue-600">Sound</span></div><progress class="progress progress-info w-full" :value="Math.min(100, stats.contentMetrics.senses.sound * 20)" max="100"></progress></div>
-                                <div><div class="flex justify-between text-xs mb-1"><span>触覚</span><span class="font-bold text-orange-600">Touch</span></div><progress class="progress progress-warning w-full" :value="Math.min(100, stats.contentMetrics.senses.touch * 20)" max="100"></progress></div>
+                            <h3 class="font-bold text-sm text-gray-500 flex items-center gap-2"><i class="ph-fill ph-eye text-teal-500"></i> 五感指数 & キーワード</h3>
+                            <div class="space-y-3 mt-2">
+                                <div v-for="(val, key) in stats.contentMetrics.senses" :key="key">
+                                    <div class="flex justify-between text-xs mb-1 uppercase font-bold text-gray-400">
+                                        <span>{{ key }}</span><span>Lv.{{ Math.min(5, Math.ceil(val/2)) }}</span>
+                                    </div>
+                                    <progress class="progress w-full h-2" 
+                                        :class="{'progress-error': key==='sight', 'progress-info': key==='sound', 'progress-warning': key==='touch'}" 
+                                        :value="Math.min(100, val * 10)" max="100"></progress>
+                                </div>
+                                
                                 <div class="bg-base-200 p-3 rounded-lg mt-4">
-                                    <div class="text-xs font-bold text-gray-500 mb-2">検出キーワード</div>
+                                    <div class="text-xs font-bold text-gray-500 mb-2">ジャンル検出語句 (Top 10)</div>
                                     <div class="flex flex-wrap gap-1">
-                                        <span v-for="word in stats.contentMetrics.foundKeywords" :key="word" class="badge badge-sm badge-outline bg-base-100">{{ word }}</span>
-                                        <span v-if="stats.contentMetrics.foundKeywords.length === 0" class="text-xs text-gray-400">特になし</span>
+                                        <span v-for="word in stats.contentMetrics.foundKeywords" :key="word" class="badge badge-sm badge-outline bg-base-100 text-xs">{{ word }}</span>
+                                        <span v-if="stats.contentMetrics.foundKeywords.length === 0" class="text-xs text-gray-400">検出なし</span>
                                     </div>
                                 </div>
                             </div>
@@ -215,41 +206,17 @@
                     </div>
                 </div>
 
-                <div class="card bg-base-100 shadow-xl">
-                    <div class="card-body p-0 md:p-6">
-                        <div class="p-4 md:p-0"><h3 class="card-title text-base"><i class="ph-fill ph-check-circle text-success"></i> 改善チェックリスト</h3></div>
-                        <div class="overflow-x-auto">
-                            <table class="table table-zebra w-full text-sm">
-                                <thead class="bg-base-200">
-                                    <tr><th>項目</th><th class="text-center">現状</th><th class="hidden md:table-cell">目標目安</th><th>アドバイス</th></tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="item in adviceList" :key="item.label">
-                                        <td class="font-bold whitespace-nowrap">{{ item.label }}</td>
-                                        <td class="text-center font-mono font-bold" :class="item.statusColor">{{ item.value }}</td>
-                                        <td class="hidden md:table-cell text-gray-500 text-xs">{{ item.target }}</td>
-                                        <td><span class="badge badge-sm border-0" :class="item.badge">{{ item.msg }}</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
             </div>
         </section>
     </main>
-
-    <footer class="footer footer-center p-4 bg-base-300 text-base-content">
-        <aside><p class="font-bold text-xs md:text-sm">&copy; 2024 Narou Analyzer Pro. Powered by Vue.js & Chart.js.</p></aside>
-    </footer>
 
     <div class="fixed bottom-4 left-0 right-0 px-4 z-40 flex flex-col gap-2 items-center pointer-events-none">
         <div v-if="toastMessage" class="alert shadow-lg w-auto min-w-[300px] animate-bounce-in pointer-events-auto" :class="toastType">
             <i class="ph-fill text-xl" :class="toastIcon"></i><span>{{ toastMessage }}</span>
         </div>
-        <button @click="analyzeText" :disabled="isProcessing || inputText.length < 10" class="btn btn-primary btn-lg w-full max-w-md shadow-xl border-t border-white/20 pointer-events-auto transition-all transform active:scale-95" :class="{'btn-disabled opacity-50': inputText.length < 10}">
+        <button @click="analyzeText" :disabled="isProcessing || inputText.length < 10" class="btn btn-primary btn-lg w-full max-w-md shadow-2xl border-t border-white/20 pointer-events-auto transition-all transform active:scale-95 hover:-translate-y-1">
             <span v-if="isProcessing" class="loading loading-spinner"></span>
-            <span v-else class="flex items-center gap-2"><i class="ph-bold ph-lightning"></i><span>{{ getGenreName(selectedGenre) }}基準で解析</span></span>
+            <span v-else class="flex items-center gap-2"><i class="ph-bold ph-lightning"></i><span>{{ getGenreName(selectedGenre) }}基準で診断</span></span>
         </button>
     </div>
 </div>
@@ -257,57 +224,96 @@
 <dialog id="my_modal_2" class="modal">
   <div class="modal-box">
     <h3 class="font-bold text-lg text-success flex items-center gap-2"><i class="ph-fill ph-lock-key"></i> データ保護について</h3>
-    <p class="py-4"><strong>1. サーバーへの送信なし</strong><br>このツールはブラウザ内で処理を行います。入力データがサーバーに送信・保存されることはありません。</p>
+    <p class="py-4">このツールはブラウザ内（JavaScript）のみで処理を行います。入力されたテキストがサーバーに送信されたり保存されたりすることは一切ありません。</p>
     <div class="modal-action"><form method="dialog"><button class="btn">閉じる</button></form></div>
   </div>
   <form method="dialog" class="modal-backdrop"><button>close</button></form>
 </dialog>
 
 <script>
+    // --- Configuration & Data ---
     const DICTIONARIES = {
         positive: ['好き', '愛', '嬉しい', '楽しい', '幸せ', '光', '笑顔', '希望', '成功', '美しい', '最高', '安心', '温かい', '喜び', '勝利', '素敵', 'ありがとう', '仲間', '絆', '回復', '救い', '優雅', '可憐', '爽快'],
-        negative: ['嫌い', '憎', '悲しい', '辛い', '苦しい', '闇', '涙', '絶望', '失敗', '醜い', '最悪', '不安', '冷たい', '怒り', '敗北', '死', '殺', '痛い', '怖い', '恐怖', '孤独', '裏切り', '叫び', '血', '傷'],
-        sight: ['見る', '見え', '視線', '色', '赤', '青', '黒', '白', '輝', '暗', '光', '姿', '景色', '瞳', '鮮やか', 'ぼんやり', '映る'],
-        sound: ['聞', '音', '声', '響', '静寂', '叫', '囁', '歌', '騒', '耳', '轟', 'メロディ', '悲鳴', 'ざわ'],
-        touch: ['痛', '熱', '冷', '触', '肌', '震', '重', '軽', '硬', '柔', '風', '撫', '殴', '体温', '痺'],
+        negative: ['嫌い', '憎', '悲しい', '辛い', '苦しい', '闇', '涙', '絶望', '失敗', '醜い', '最悪', '不安', '冷たい', '怒り', '敗北', '死', '殺', '痛い', '怖い', '恐怖', '孤独', '裏切り', '叫び', '血', '傷', '魔', '呪'],
+        sight: ['見る', '見え', '視線', '色', '赤', '青', '黒', '白', '輝', '暗', '光', '姿', '景色', '瞳', '鮮やか', 'ぼんやり', '映る', '金', '銀', '紫', '眺', '目撃'],
+        sound: ['聞', '音', '声', '響', '静寂', '叫', '囁', '歌', '騒', '耳', '轟', 'メロディ', '悲鳴', 'ざわ', '沈黙', 'ノイズ', '爆音'],
+        touch: ['痛', '熱', '冷', '触', '肌', '震', '重', '軽', '硬', '柔', '風', '撫', '殴', '体温', '痺', '湿', '乾', '衝撃'],
         genres: {
-            isekai: ['魔法', 'スキル', 'レベル', '剣', 'ギルド', '魔王', '勇者', '転生', '召喚', 'ステータス', '王女', '令嬢', '婚約破棄', '王子', '貴族', 'ダンジョン', '冒険者', '魔物', 'ドラゴン'],
-            real_love: ['学校', '教室', '先輩', '後輩', '部活', '放課後', 'デート', '告白', '携帯', 'スマホ', '仕事', '会社', '結婚', '離婚', '浮気', '彼氏', '彼女', '恋人'],
-            high_fantasy: ['剣', '魔法', 'ドラゴン', 'エルフ', 'ドワーフ', '王国', '帝国', '精霊', '神', '呪い', '城', '騎士', '森', '旅', '伝説'],
-            mystery: ['殺人', '死体', '警察', '刑事', '探偵', '証拠', 'トリック', '犯人', '密室', '動機', 'アリバイ', '事件', '推理', '謎'],
-            horror: ['血', '死', '呪', '霊', '幽霊', '闇', '悲鳴', '恐怖', '殺', '逃', '狂', '影', '化け物', '廃墟', '夜'],
-            scifi: ['宇宙', 'ロボット', 'AI', '船', '星', '未来', '科学', '実験', '博士', '機械', 'システム', 'データ', '仮想', 'VR', 'レーザー']
+            isekai: ['魔法', 'スキル', 'レベル', '剣', 'ギルド', '魔王', '勇者', '転生', '召喚', 'ステータス', '王女', '令嬢', '婚約破棄', '王子', '貴族', 'ダンジョン', '冒険者', 'チート', '悪役', '聖女'],
+            real_love: ['学校', '教室', '先輩', '後輩', '部活', '放課後', 'デート', '告白', '携帯', 'スマホ', '仕事', '会社', '結婚', '離婚', '浮気', '彼氏', '彼女', '恋人', 'カフェ', '電車'],
+            high_fantasy: ['剣', '魔法', 'ドラゴン', 'エルフ', 'ドワーフ', '王国', '帝国', '精霊', '神', '呪い', '城', '騎士', '森', '旅', '伝説', '戦記', '軍', '皇帝'],
+            mystery: ['殺人', '死体', '警察', '刑事', '探偵', '証拠', 'トリック', '犯人', '密室', '動機', 'アリバイ', '事件', '推理', '謎', '血痕', '指紋', '嘘'],
+            horror: ['血', '死', '呪', '霊', '幽霊', '闇', '悲鳴', '恐怖', '殺', '逃', '狂', '影', '化け物', '廃墟', '夜', '背後', '気配', '不気味'],
+            scifi: ['宇宙', 'ロボット', 'AI', '船', '星', '未来', '科学', '実験', '博士', '機械', 'システム', 'データ', '仮想', 'VR', 'レーザー', '次元', 'ワープ'],
+            battle: ['殴', '蹴', '撃', '殺', '血', '弾', '剣', '銃', '爆発', '敵', '味方', '勝利', '敗北', '死闘', '技', '能力', '覚醒']
         }
     };
     
+    // 定義: ジャンルごとの設定
+    // type: 評価基準プロファイル (light, std, heavy, dialogue_focus, etc)
     const GENRE_PARAMS = {
-        'isekai':       { name: '異世界(恋愛)', type: 'light', keywords: 'isekai', desc: 'キーワード：婚約破棄、魔法、スキル等' },
-        'real_love':    { name: '現実世界(恋愛)', type: 'std', keywords: 'real_love', desc: 'キーワード：学校、オフィス、告白等' },
-        'high_fantasy': { name: 'ハイファンタジー', type: 'light', keywords: 'high_fantasy', desc: 'キーワード：剣、魔法、冒険等' },
-        'low_fantasy':  { name: 'ローファンタジー', type: 'std', keywords: 'isekai', desc: '現代知識×ファンタジー要素' },
-        'pure_lit':     { name: '純文学', type: 'heavy', keywords: null, desc: '感情描写と風景描写の深さを評価' },
-        'human':        { name: 'ヒューマンドラマ', type: 'std', keywords: 'real_love', desc: '人間関係の機微を評価' },
-        'history':      { name: '歴史', type: 'heavy', keywords: 'high_fantasy', desc: '時代背景の描写を評価' },
-        'mystery':      { name: '推理', type: 'heavy', keywords: 'mystery', desc: '謎解き要素、事件性を評価' },
-        'horror':       { name: 'ホラー', type: 'std', keywords: 'horror', desc: '恐怖演出、五感への刺激を評価' },
-        'action':       { name: 'アクション', type: 'std', keywords: 'high_fantasy', desc: '戦闘描写のスピード感を評価' },
-        'comedy':       { name: 'コメディー', type: 'light', keywords: null, desc: 'テンポの良さを最優先' },
-        'vr_game':      { name: 'VRゲーム', type: 'light', keywords: 'scifi', desc: 'ゲーム用語、システム描写' },
-        'space':        { name: '宇宙(SF)', type: 'std', keywords: 'scifi', desc: 'SFガジェット、世界観用語' },
-        'scifi':        { name: '空想科学', type: 'std', keywords: 'scifi', desc: '科学的用語、理論' },
-        'panic':        { name: 'パニック', type: 'light', keywords: 'horror', desc: '切迫感、危機的状況' },
-        'fairy':        { name: '童話', type: 'special', keywords: null, desc: '平易な表現' },
-        'essay':        { name: 'エッセイ', type: 'special', keywords: null, desc: '個人の思想表現' },
-        'poetry':       { name: '詩', type: 'special', keywords: null, desc: 'リズムと感性' },
-        'replay':       { name: 'リプレイ', type: 'special', keywords: null, desc: '会話記録' },
-        'other':        { name: 'その他', type: 'std', keywords: null, desc: '標準的な解析' }
+        'isekai':       { name: '異世界(なろう系)', type: 'light_novel', keywords: 'isekai', desc: 'テンポとカタルシス重視' },
+        'real_love':    { name: '現代恋愛', type: 'romance', keywords: 'real_love', desc: '感情の揺れ動きと会話' },
+        'high_fantasy': { name: 'ハイファンタジー', type: 'epic', keywords: 'high_fantasy', desc: '世界観描写と重厚さ' },
+        'low_fantasy':  { name: 'ローファンタジー', type: 'light_novel', keywords: 'isekai', desc: '現代的価値観×ファンタジー' },
+        'pure_lit':     { name: '純文学', type: 'literature', keywords: null, desc: '文章の美しさと五感描写' },
+        'human':        { name: 'ヒューマンドラマ', type: 'standard', keywords: 'real_love', desc: '人間関係の機微' },
+        'mystery':      { name: 'ミステリー', type: 'logic', keywords: 'mystery', desc: '論理構成と事実関係' },
+        'horror':       { name: 'ホラー', type: 'atmosphere', keywords: 'horror', desc: '恐怖演出と五感への刺激' },
+        'action':       { name: 'アクション', type: 'action', keywords: 'battle', desc: '戦闘のスピード感' },
+        'comedy':       { name: 'コメディー', type: 'comedy', keywords: null, desc: '会話のテンポと勢い' },
+        'scifi':        { name: 'SF', type: 'logic', keywords: 'scifi', desc: '設定の緻密さ' },
+        'essay':        { name: 'エッセイ', type: 'standard', keywords: null, desc: '構成と言葉選び' }
     };
 
+    // 評価プロファイル（ここでジャンルごとの採点基準を大きく変える）
+    // weights: { form: 文法/形式, read: 可読性, imm: 没入感/会話, cont: 内容/描写 } 合計100になるように
     const SCORING_PROFILES = {
-        light: { targetLen: 35, lenPenalty: 2.0, minBlank: 15, minDialog: 30, maxKanji: 30 },
-        std: { targetLen: 45, lenPenalty: 1.5, minBlank: 10, minDialog: 20, maxKanji: 40 },
-        heavy: { targetLen: 60, lenPenalty: 1.0, minBlank: 5, minDialog: 5, maxKanji: 50 },
-        special: { targetLen: 50, lenPenalty: 0.5, minBlank: 10, minDialog: 0, maxKanji: 40 }
+        light_novel: { 
+            targetLen: 35, lenPenalty: 2.5, minDialog: 25, 
+            focus: 'テンポ・会話',
+            weights: { form: 10, read: 40, imm: 40, cont: 10 } 
+        },
+        romance: { 
+            targetLen: 40, lenPenalty: 1.5, minDialog: 30, 
+            focus: '会話・感情',
+            weights: { form: 10, read: 20, imm: 40, cont: 30 } 
+        },
+        epic: { 
+            targetLen: 60, lenPenalty: 1.0, minDialog: 10, 
+            focus: '描写・世界観',
+            weights: { form: 20, read: 20, imm: 10, cont: 50 } 
+        },
+        literature: { 
+            targetLen: 65, lenPenalty: 0.5, minDialog: 5, 
+            focus: '表現力・五感',
+            weights: { form: 20, read: 10, imm: 10, cont: 60 } 
+        },
+        logic: { 
+            targetLen: 55, lenPenalty: 1.2, minDialog: 20, 
+            focus: '構成・キーワード',
+            weights: { form: 30, read: 20, imm: 10, cont: 40 } 
+        },
+        atmosphere: { 
+            targetLen: 45, lenPenalty: 1.2, minDialog: 15, 
+            focus: '雰囲気・五感',
+            weights: { form: 10, read: 20, imm: 10, cont: 60 } 
+        },
+        action: { 
+            targetLen: 30, lenPenalty: 3.0, minDialog: 10, 
+            focus: '疾走感',
+            weights: { form: 10, read: 50, imm: 10, cont: 30 } 
+        },
+        comedy: { 
+            targetLen: 30, lenPenalty: 2.0, minDialog: 50, 
+            focus: '会話の勢い',
+            weights: { form: 5, read: 30, imm: 60, cont: 5 } 
+        },
+        standard: { 
+            targetLen: 45, lenPenalty: 1.5, minDialog: 20, 
+            focus: 'バランス',
+            weights: { form: 25, read: 25, imm: 25, cont: 25 } 
+        }
     };
 
     const { createApp, ref, computed, watch, nextTick } = Vue;
@@ -325,21 +331,24 @@
             let radarChart = null;
             let sentimentChart = null;
 
+            // UI用グルーピング
             const genreDefinitions = {
-                '恋愛': [ { id: 'isekai', name: '異世界' }, { id: 'real_love', name: '現実世界' } ],
-                'ファンタジー': [ { id: 'high_fantasy', name: 'ハイファンタジー' }, { id: 'low_fantasy', name: 'ローファンタジー' } ],
-                '文芸': [ { id: 'pure_lit', name: '純文学' }, { id: 'human', name: 'ヒューマンドラマ' }, { id: 'history', name: '歴史' }, { id: 'mystery', name: '推理' }, { id: 'horror', name: 'ホラー' }, { id: 'action', name: 'アクション' }, { id: 'comedy', name: 'コメディー' } ],
-                'SF': [ { id: 'vr_game', name: 'VRゲーム' }, { id: 'space', name: '宇宙' }, { id: 'scifi', name: '空想科学' }, { id: 'panic', name: 'パニック' } ],
-                'その他': [ { id: 'fairy', name: '童話' }, { id: 'poetry', name: '詩' }, { id: 'essay', name: 'エッセイ' }, { id: 'replay', name: 'リプレイ' }, { id: 'other', name: 'その他' } ]
+                'トレンド': [ { id: 'isekai', name: '異世界(なろう系)' }, { id: 'real_love', name: '現代恋愛' }, { id: 'comedy', name: 'ラブコメ・コメディー' } ],
+                'ファンタジー': [ { id: 'high_fantasy', name: 'ハイファンタジー' }, { id: 'low_fantasy', name: 'ローファンタジー' }, { id: 'action', name: 'アクション・バトル' } ],
+                '文芸・小説': [ { id: 'pure_lit', name: '純文学' }, { id: 'human', name: 'ヒューマンドラマ' }, { id: 'mystery', name: 'ミステリー・推理' }, { id: 'horror', name: 'ホラー' }, { id: 'scifi', name: 'SF' } ],
+                'その他': [ { id: 'essay', name: 'エッセイ・その他' } ]
             };
 
+            const currentGenreSettings = computed(() => GENRE_PARAMS[selectedGenre.value] || GENRE_PARAMS['human']);
+            const currentScoringProfile = computed(() => SCORING_PROFILES[currentGenreSettings.value.type] || SCORING_PROFILES['standard']);
+
+            // Watchers & Helpers
             watch(isDarkMode, (newVal) => {
                 document.documentElement.setAttribute('data-theme', newVal ? 'night' : 'winter');
                 updateChartTheme();
             });
 
-            const currentGenreSettings = computed(() => GENRE_PARAMS[selectedGenre.value] || GENRE_PARAMS['other']);
-            const getGenreName = (id) => (GENRE_PARAMS[id] || GENRE_PARAMS['other']).name;
+            const getGenreName = (id) => (GENRE_PARAMS[id] || GENRE_PARAMS['human']).name;
             const showToast = (msg, type = 'alert-info') => {
                 toastMessage.value = msg;
                 toastType.value = type;
@@ -350,15 +359,24 @@
                 if (toastType.value.includes('error')) return 'ph-warning-circle';
                 return 'ph-info';
             });
-            const calculateMean = (arr) => arr.reduce((a, b) => a + b, 0) / (arr.length || 1);
+            const getScoreColor = (score) => {
+                if (score >= 80) return 'text-success';
+                if (score >= 60) return 'text-info';
+                if (score >= 40) return 'text-warning';
+                return 'text-error';
+            };
 
-            // Analysis Core
+            // --- Analysis Core Logic ---
             const analyzeContent = (tokens, genreKey) => {
-                let posScore = 0, negScore = 0, sightCount = 0, soundCount = 0, touchCount = 0, genreMatchCount = 0;
+                let posScore = 0, negScore = 0;
+                let senses = { sight: 0, sound: 0, touch: 0 };
+                let genreMatchCount = 0;
                 const foundKeywords = new Set();
                 const sentimentTimeline = [];
                 let currentChunkScore = 0;
-                const chunkSize = Math.ceil(tokens.length / 20);
+                
+                // チャンク分割（感情曲線の粒度）
+                const chunkSize = Math.max(10, Math.ceil(tokens.length / 20));
                 const targetGenreKey = GENRE_PARAMS[genreKey].keywords;
                 const genreWords = targetGenreKey ? DICTIONARIES.genres[targetGenreKey] : [];
 
@@ -366,10 +384,15 @@
                     let val = 0;
                     if (DICTIONARIES.positive.some(w => token.includes(w))) { posScore++; val = 1; }
                     if (DICTIONARIES.negative.some(w => token.includes(w))) { negScore++; val = -1; }
-                    if (DICTIONARIES.sight.some(w => token.includes(w))) sightCount++;
-                    if (DICTIONARIES.sound.some(w => token.includes(w))) soundCount++;
-                    if (DICTIONARIES.touch.some(w => token.includes(w))) touchCount++;
-                    if (genreWords && genreWords.some(w => token.includes(w))) { genreMatchCount++; foundKeywords.add(token); }
+                    
+                    if (DICTIONARIES.sight.some(w => token.includes(w))) senses.sight++;
+                    if (DICTIONARIES.sound.some(w => token.includes(w))) senses.sound++;
+                    if (DICTIONARIES.touch.some(w => token.includes(w))) senses.touch++;
+                    
+                    if (genreWords && genreWords.some(w => token.includes(w))) { 
+                        genreMatchCount++; 
+                        foundKeywords.add(token); 
+                    }
 
                     currentChunkScore += val;
                     if ((index + 1) % chunkSize === 0 || index === tokens.length - 1) {
@@ -378,96 +401,205 @@
                     }
                 });
 
+                // スムージング
                 const smoothedTimeline = sentimentTimeline.map((val, i, arr) => {
                     const prev = arr[i-1] || val;
                     const next = arr[i+1] || val;
                     return (prev + val + next) / 3;
                 });
 
-                const sensoryScore = Math.min(10, Math.ceil((sightCount + soundCount + touchCount) * 100 / tokens.length));
-                let genreMatchScore = 100;
-                if (genreWords.length > 0) {
-                    const matchRatio = (genreMatchCount / tokens.length) * 1000;
-                    genreMatchScore = Math.min(100, 50 + matchRatio * 10);
-                }
-                const range = Math.max(...smoothedTimeline) - Math.min(...smoothedTimeline);
-                
+                // 五感スコア算出
+                const totalSenses = senses.sight + senses.sound + senses.touch;
+                const sensoryRatio = (totalSenses / tokens.length) * 1000; // 頻度
+                // 描写重視ジャンルなら基準を厳しく、そうでなければ甘く
+                const isLit = GENRE_PARAMS[genreKey].type === 'literature' || GENRE_PARAMS[genreKey].type === 'atmosphere';
+                const sensoryScore = Math.min(10, Math.ceil(sensoryRatio / (isLit ? 1.5 : 0.8)));
+
                 return {
                     sentimentTimeline: smoothedTimeline,
-                    senses: { sight: sightCount, sound: soundCount, touch: touchCount },
-                    sensoryScore,
-                    genreMatchScore,
-                    genreMatch: Math.round(genreMatchScore), // 【修正箇所】テンプレートで参照されているキーを追加
-                    foundKeywords: Array.from(foundKeywords).slice(0, 8),
-                    emotionalRange: range > 5 ? 'ドラマチック' : range > 2 ? '標準的' : '平坦',
-                    rawRange: range
+                    senses,
+                    sensoryScore, // 0-10 scale
+                    genreMatchCount,
+                    foundKeywords: Array.from(foundKeywords).slice(0, 10)
                 };
             };
 
             const analyzeText = async () => {
                 if (inputText.value.length < 10) return;
                 isProcessing.value = true;
-                await new Promise(r => setTimeout(r, 500));
+                await new Promise(r => setTimeout(r, 600)); // UX Wait
 
                 try {
                     const text = inputText.value;
                     const genreKey = selectedGenre.value;
-                    const params = SCORING_PROFILES[GENRE_PARAMS[genreKey].type];
+                    const genreDef = GENRE_PARAMS[genreKey];
+                    const profile = SCORING_PROFILES[genreDef.type] || SCORING_PROFILES['standard'];
 
+                    // Tokenize (簡易形態素解析)
                     let tokens = [];
                     if (window.Intl && Intl.Segmenter) {
                         const segmenter = new Intl.Segmenter('ja', { granularity: 'word' });
                         for (const seg of segmenter.segment(text)) { if (seg.isWordLike) tokens.push(seg.segment); }
                     } else { tokens = text.split(/[\s\u3000、。！？\(\)「」]+/); }
-                    const ttr = tokens.length > 0 ? ((new Set(tokens).size / tokens.length) * 100).toFixed(1) : 0;
-
+                    
                     const lines = text.split('\n');
                     const sentences = text.split(/[。！？]/).filter(s => s.trim().length > 0);
-                    const avgLen = calculateMean(sentences.map(s => s.length));
+                    
+                    // Basic Metrics
+                    const avgLen = sentences.reduce((a,b)=>a+b.length,0) / (sentences.length || 1);
                     const blankRatio = (lines.filter(l => l.trim() === '').length / lines.length) * 100;
                     const dialogueRatio = ((text.match(/「[^」]+」/g) || []).join('').length / text.length) * 100;
                     const kanjiRatio = ((text.match(/[\u4E00-\u9FFF]/g) || []).length / (text.replace(/\s/g,'').length || 1)) * 100;
-
                     const cMetrics = analyzeContent(tokens, genreKey);
 
-                    let readScore = Math.max(0, Math.min(100, 100 - Math.max(0, (avgLen - params.targetLen) * params.lenPenalty) - Math.max(0, (params.minBlank - blankRatio) * 2)));
-                    let immScore = Math.max(0, Math.min(100, 100 - (dialogueRatio < params.minDialog ? (params.minDialog - dialogueRatio) * 2 : 0)));
-                    let contScore = Math.max(0, Math.min(100, 60 + cMetrics.rawRange * 5 - (cMetrics.genreMatchScore < 60 ? 10 : 0) - (cMetrics.sensoryScore < 2 ? 10 : 0)));
-                    let formScore = (kanjiRatio <= params.maxKanji ? 50 : Math.max(0, 50 - (kanjiRatio - params.maxKanji)*2)) + (avgLen <= params.targetLen ? 50 : Math.max(0, 50 - (avgLen - params.targetLen)*1.5));
+                    // --- Dynamic Scoring System ---
                     
-                    const totalScore = (readScore + immScore + contScore + formScore) / 4;
-                    let rank = totalScore >= 85 ? 'S' : totalScore >= 70 ? 'A' : totalScore >= 55 ? 'B' : 'C';
-                    let title = totalScore >= 85 ? 'マスターピース' : totalScore >= 70 ? '良作' : totalScore >= 55 ? '標準' : '要改善';
-                    let comment = totalScore >= 85 ? `素晴らしい！${getGenreName(genreKey)}として完璧なバランスです。` : 
-                                  totalScore >= 70 ? `良い出来です。${cMetrics.emotionalRange}な展開が評価されています。` : 
-                                  totalScore >= 55 ? `基本はできています。${cMetrics.rawRange < 2 ? '起伏を作りましょう。' : 'バランスを見直しましょう。'}` : 
-                                  `構成か内容に課題があります。アドバイスを確認してください。`;
+                    // 1. Form Score (文体・形式)
+                    // 漢字含有率や段落構成。読みやすさの基礎。
+                    let formScore = 100;
+                    // 漢字が多すぎると減点（ただし純文学などは許容）
+                    const maxKanji = profile.type === 'literature' ? 50 : 35;
+                    if (kanjiRatio > maxKanji) formScore -= (kanjiRatio - maxKanji) * 2;
+                    formScore = Math.max(0, Math.min(100, formScore));
 
-                    stats.value = { rank, title, comment, metrics: [formScore, readScore, immScore, contScore, parseFloat(ttr)], contentMetrics: cMetrics };
+                    // 2. Readability Score (可読性・リズム)
+                    // 平均文長がターゲットから離れるほど減点。
+                    let readScore = 100;
+                    const lenDiff = Math.abs(avgLen - profile.targetLen);
+                    // 許容範囲(±5文字)を超えた分にペナルティ
+                    if (lenDiff > 5) {
+                        readScore -= (lenDiff - 5) * profile.lenPenalty;
+                    }
+                    readScore = Math.max(0, Math.min(100, readScore));
+
+                    // 3. Immersion Score (没入感・会話・構成)
+                    // 会話比率がジャンルに合っているか。
+                    let immScore = 100;
+                    if (dialogueRatio < profile.minDialog) {
+                        // 会話が足りない場合減点
+                        immScore -= (profile.minDialog - dialogueRatio) * 1.5;
+                    } else if (profile.type === 'literature' && dialogueRatio > 40) {
+                        // 純文学で会話多すぎは減点
+                        immScore -= (dialogueRatio - 40);
+                    }
+                    immScore = Math.max(0, Math.min(100, immScore));
+
+                    // 4. Content Score (内容・描写・ジャンル適合)
+                    let contScore = 60; // 基礎点
+                    // 感情の起伏ボーナス
+                    const range = Math.max(...cMetrics.sentimentTimeline) - Math.min(...cMetrics.sentimentTimeline);
+                    contScore += Math.min(20, range * 4); 
+                    // 五感描写ボーナス（描写重視ジャンルは必須）
+                    if (profile.focus.includes('描写') || profile.focus.includes('五感')) {
+                        contScore += cMetrics.sensoryScore * 4; // Max 40
+                        if(cMetrics.sensoryScore < 3) contScore -= 20; // ペナルティ
+                    } else {
+                        contScore += cMetrics.sensoryScore * 2;
+                    }
+                    // キーワード適合ボーナス
+                    if (genreDef.keywords) {
+                        contScore += Math.min(20, cMetrics.genreMatchCount * 3);
+                    }
+                    contScore = Math.max(0, Math.min(100, contScore));
+
+
+                    // --- Weighted Final Calculation ---
+                    const weights = profile.weights;
+                    const totalScore = (
+                        (formScore * weights.form) + 
+                        (readScore * weights.read) + 
+                        (immScore * weights.imm) + 
+                        (contScore * weights.cont)
+                    ) / 100;
+
+                    // Rank
+                    let rank = totalScore >= 90 ? 'S' : totalScore >= 75 ? 'A' : totalScore >= 60 ? 'B' : totalScore >= 45 ? 'C' : 'D';
                     
+                    // Comment Generation
+                    let comment = "";
+                    if (totalScore >= 80) {
+                        comment = `素晴らしい執筆力です！\n${getGenreName(genreKey)}として理想的なバランス（${profile.focus}）が実現できています。`;
+                    } else if (totalScore >= 60) {
+                        comment = `安定した筆力があります。\n${profile.focus}の面で少し改善の余地があるかもしれませんが、読みやすい作品です。`;
+                    } else {
+                        comment = `ジャンルの特性（${profile.focus}）を意識してみましょう。\n文の長さや描写のバランスを見直すとより良くなります。`;
+                    }
+
+                    stats.value = {
+                        rank,
+                        totalScore,
+                        comment,
+                        radarData: [
+                            { label: '文体形式', score: Math.round(formScore), weight: weights.form },
+                            { label: '可読性', score: Math.round(readScore), weight: weights.read },
+                            { label: '構成/会話', score: Math.round(immScore), weight: weights.imm },
+                            { label: '内容/描写', score: Math.round(contScore), weight: weights.cont },
+                        ],
+                        contentMetrics: cMetrics
+                    };
+
+                    // Advice Generation
                     const list = [];
-                    const isGenreLow = cMetrics.genreMatchScore < 70 && GENRE_PARAMS[genreKey].keywords;
-                    list.push({ label: 'ジャンル性', value: cMetrics.genreMatchScore >= 80 ? '高い' : '普通', target: '関連語句の使用', statusColor: isGenreLow ? 'text-warning' : 'text-success', badge: isGenreLow ? 'badge-warning' : 'badge-success', msg: isGenreLow ? 'ジャンル特有の単語が少なめです。' : 'ジャンルに合っています。' });
-                    const isSensoryLow = cMetrics.sensoryScore < 3;
-                    list.push({ label: '五感描写', value: 'Lv.' + cMetrics.sensoryScore, target: 'Lv.3以上推奨', statusColor: isSensoryLow ? 'text-error' : 'text-success', badge: isSensoryLow ? 'badge-error' : 'badge-success', msg: isSensoryLow ? '描写を足しましょう。' : '情景が浮かびます。' });
-                    list.push({ label: '平均文長', value: Math.round(avgLen) + '文字', target: `${params.targetLen}文字以下`, statusColor: avgLen > params.targetLen + 10 ? 'text-error' : 'text-success', badge: avgLen > params.targetLen + 10 ? 'badge-error' : 'badge-ghost', msg: avgLen > params.targetLen + 10 ? '長すぎます。' : '適正です。' });
+                    // Length Advice
+                    const lenStatus = avgLen > profile.targetLen + 10 ? '長め' : avgLen < profile.targetLen - 15 ? '短め' : '適正';
+                    list.push({ 
+                        label: '平均文長', 
+                        value: Math.round(avgLen) + '文字', 
+                        target: `目安 ${profile.targetLen}`, 
+                        statusColor: lenStatus === '適正' ? 'text-success' : 'text-warning',
+                        msg: lenStatus === '長め' ? '一文を短く切るとテンポが出ます。' : lenStatus === '短め' ? '描写を足して深みを出せます。' : '読みやすい長さです。'
+                    });
+
+                    // Dialogue Advice
+                    const talkStatus = dialogueRatio < profile.minDialog ? '少ない' : '十分';
+                    list.push({
+                        label: '会話比率',
+                        value: Math.round(dialogueRatio) + '%',
+                        target: `目安 ${profile.minDialog}%以上`,
+                        statusColor: talkStatus === '十分' ? 'text-success' : profile.weights.imm > 30 ? 'text-error' : 'text-warning',
+                        msg: talkStatus === '少ない' && profile.weights.imm > 30 ? 'このジャンルはもっと会話が必要です。' : 'バランスは良好です。'
+                    });
+
+                    // Sensory Advice
+                    const senseStatus = cMetrics.sensoryScore < 3 ? '不足' : '良好';
+                    list.push({
+                        label: '五感描写',
+                        value: 'Lv.' + cMetrics.sensoryScore,
+                        target: 'Lv.3以上',
+                        statusColor: senseStatus === '良好' ? 'text-success' : profile.weights.cont > 40 ? 'text-error' : 'text-gray-400',
+                        msg: senseStatus === '不足' ? (profile.weights.cont > 40 ? '没入感のため描写を増やしましょう。' : '余裕があれば描写を足しましょう。') : '情景が伝わります。'
+                    });
+
                     adviceList.value = list;
 
                     showToast('解析完了！', 'alert-success');
                     await nextTick();
                     renderCharts();
                     document.getElementById('results-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
-                } catch (e) { console.error(e); showToast('エラーが発生しました', 'alert-error'); } finally { isProcessing.value = false; }
+
+                } catch (e) {
+                    console.error(e);
+                    showToast('エラーが発生しました', 'alert-error');
+                } finally {
+                    isProcessing.value = false;
+                }
             };
 
-            // Charts
+            // --- Charts ---
             const updateChartTheme = () => {
                 const color = isDarkMode.value ? '#cbd5e1' : '#475569';
                 const grid = isDarkMode.value ? '#334155' : '#e2e8f0';
+                
                 [radarChart, sentimentChart].forEach(c => {
                     if(c) {
-                        if(c.options.scales.r) c.options.scales.r.pointLabels.color = color;
-                        if(c.options.scales.y) { c.options.scales.y.grid.color = grid; c.options.scales.y.ticks.color = color; }
+                        if(c.options.scales.r) {
+                            c.options.scales.r.pointLabels.color = color;
+                            c.options.scales.r.grid.color = grid;
+                        }
+                        if(c.options.scales.y) { 
+                            c.options.scales.y.grid.color = grid; 
+                            c.options.scales.y.ticks.color = color; 
+                        }
                         c.update();
                     }
                 });
@@ -476,87 +608,86 @@
             const renderCharts = () => {
                 if (radarChart) radarChart.destroy();
                 if (sentimentChart) sentimentChart.destroy();
-                const ctxR = document.getElementById('radarChart'), ctxS = document.getElementById('sentimentChart');
-                if(!ctxR || !ctxS) return;
+
+                const ctxRadar = document.getElementById('radarChart');
+                const ctxSent = document.getElementById('sentimentChart');
                 const color = isDarkMode.value ? '#cbd5e1' : '#475569';
                 const grid = isDarkMode.value ? '#334155' : '#e2e8f0';
 
-                radarChart = new Chart(ctxR, {
+                radarChart = new Chart(ctxRadar, {
                     type: 'radar',
                     data: {
-                        labels: ['構成力', '可読性', '没入度', '内容'],
+                        labels: stats.value.radarData.map(d => `${d.label}`),
                         datasets: [{
-                            label: '評価スコア',
-                            data: stats.value.metrics.slice(0, 4),
+                            label: 'あなたのスコア',
+                            data: stats.value.radarData.map(d => d.score),
                             backgroundColor: 'rgba(56, 189, 248, 0.2)',
-                            borderColor: 'rgba(56, 189, 248, 1)',
-                            pointBackgroundColor: 'rgba(56, 189, 248, 1)',
+                            borderColor: '#38bdf8',
+                            pointBackgroundColor: '#38bdf8',
+                            pointHoverBorderColor: '#fff'
                         }]
                     },
                     options: {
-                        scales: { r: { min: 0, max: 100, pointLabels: { color, font: { size: 12, family: "'Zen Maru Gothic'" } } } },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                min: 0, max: 100,
+                                ticks: { display: false, stepSize: 20 },
+                                pointLabels: { font: { size: 12, family: "'Zen Maru Gothic'" }, color: color },
+                                grid: { color: grid }
+                            }
+                        },
                         plugins: { legend: { display: false } }
                     }
                 });
 
-                sentimentChart = new Chart(ctxS, {
+                const sentData = stats.value.contentMetrics.sentimentTimeline;
+                sentimentChart = new Chart(ctxSent, {
                     type: 'line',
                     data: {
-                        labels: stats.value.contentMetrics.sentimentTimeline.map((_, i) => i + 1),
+                        labels: sentData.map((_, i) => i + 1),
                         datasets: [{
-                            label: '感情の起伏',
-                            data: stats.value.contentMetrics.sentimentTimeline,
-                            borderColor: 'rgba(236, 72, 153, 1)',
-                            backgroundColor: 'rgba(236, 72, 153, 0.1)',
-                            fill: true, tension: 0.4
+                            label: '感情曲線',
+                            data: sentData,
+                            borderColor: '#f472b6',
+                            backgroundColor: 'rgba(244, 114, 182, 0.1)',
+                            fill: true,
+                            tension: 0.4
                         }]
                     },
                     options: {
+                        responsive: true,
                         maintainAspectRatio: false,
-                        scales: { x: { display: false }, y: { grid: { color: grid }, ticks: { color } } },
-                        plugins: { legend: { display: false } }
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { display: false },
+                            y: { grid: { color: grid }, ticks: { color: color } }
+                        }
                     }
                 });
             };
 
-            const shareToX = () => {
-                const text = `【Narou Analyzer Pro】私の小説の診断結果はランク「${stats.value.rank}」でした！\n#NarouAnalyzer #Web小説`;
-                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(location.href)}`, '_blank');
-            };
-
-            const copyResult = async () => {
-                const text = `【Narou Analyzer Pro】\n総合ランク: ${stats.value.rank} (${stats.value.title})\n講評: ${stats.value.comment}\n`;
-                try {
-                    await navigator.clipboard.writeText(text);
-                    showToast('結果をコピーしました', 'alert-success');
-                } catch (err) { showToast('コピーに失敗しました', 'alert-error'); }
-            };
-
-            const rankColorClass = computed(() => {
-                if (!stats.value) return 'bg-gray-300';
-                return stats.value.rank === 'S' ? 'bg-gradient-to-b from-yellow-400 to-orange-500' :
-                       stats.value.rank === 'A' ? 'bg-gradient-to-b from-pink-400 to-rose-500' :
-                       stats.value.rank === 'B' ? 'bg-gradient-to-b from-blue-400 to-cyan-500' : 'bg-gray-400';
-            });
-            
-            const rankGradient = computed(() => {
-                if (!stats.value) return '';
-                return stats.value.rank === 'S' ? 'from-yellow-400 to-orange-600' :
-                       stats.value.rank === 'A' ? 'from-pink-400 to-rose-600' :
-                       stats.value.rank === 'B' ? 'from-blue-400 to-cyan-600' : 'from-gray-400 to-gray-600';
-            });
-            
-            const rankBadgeColor = computed(() => {
-                if (!stats.value) return '';
-                return stats.value.rank === 'S' ? 'badge-warning text-yellow-900' :
-                       stats.value.rank === 'A' ? 'badge-secondary text-pink-100' :
-                       stats.value.rank === 'B' ? 'badge-info text-blue-100' : 'badge-ghost';
-            });
-
             return {
-                inputText, selectedGenre, isProcessing, stats, adviceList, analyzeText, genreDefinitions,
-                getGenreName, currentGenreSettings, isDarkMode, shareToX, copyResult,
-                rankColorClass, rankGradient, rankBadgeColor, toastMessage, toastType, toastIcon
+                inputText, selectedGenre, isProcessing, stats, adviceList, isDarkMode,
+                genreDefinitions, currentGenreSettings, currentScoringProfile,
+                analyzeText, getGenreName, toastMessage, toastType, toastIcon,
+                rankColorClass: computed(() => {
+                    if(!stats.value) return '';
+                    const s = stats.value.totalScore;
+                    return s >= 90 ? 'bg-amber-400' : s >= 75 ? 'bg-teal-400' : s >= 60 ? 'bg-blue-400' : 'bg-gray-400';
+                }),
+                rankGradient: computed(() => {
+                    if(!stats.value) return '';
+                    const s = stats.value.totalScore;
+                    return s >= 90 ? 'from-amber-400 to-orange-600' : s >= 75 ? 'from-teal-400 to-emerald-600' : s >= 60 ? 'from-blue-400 to-indigo-600' : 'from-gray-400 to-gray-600';
+                }),
+                rankBadgeColor: computed(() => {
+                    if(!stats.value) return '';
+                    const s = stats.value.totalScore;
+                    return s >= 90 ? 'badge-warning text-white' : s >= 75 ? 'badge-accent text-white' : s >= 60 ? 'badge-info text-white' : 'badge-ghost';
+                }),
+                getScoreColor
             };
         }
     }).mount('#app');
