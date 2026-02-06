@@ -887,14 +887,31 @@ const sensoryList = [
 // ==========================================
 // 思考、感情、葛藤、推測、回想など
 const psychList = [
-    // 思考・意識
+    // 思考・意識（大幅強化）
     '思', '考', '感', '気', '心', '胸', '脳裏', '意識', '記憶', '回想', '想像', '妄想', 
     '推測', '予感', '理解', '納得', '把握', '認識', '自覚', '迷', '悩', '疑', '決意',
+    '判断', '予想', '直感', 'イメージ', '確信', '信じ',
+    '気づ', '悟', '察し', '見抜', '察知', '読み取',
+    '思い出', '忘れ', '振り返', '懐かし',
+    'わか', '了解', '飲み込', '腑に落ち', '合点', 'ピンと来',
+    
     // 感情の動き
     '不安', '恐怖', '喜', '悲', '怒', '驚', '哀', '憂', '憤', '憎', '愛', '恋', '情',
     '期待', '願', '望', '欲', '焦', '悔', '嫉妬', '羨', '安堵', '絶望', '孤独', '虚無',
+    '嬉し', '楽し', '幸せ', '満足', '安心', '感動', '興奮',
+    '悲し', '哀し', '辛', '苦し', '切な', '寂し', '虚し',
+    '腹立', 'イラ', 'ムカ', '不快', '恨',
+    '怖', '心配', '緊張', '困惑', '慌て', '動揺',
+    'びっくり', '仰天', '呆然', '唖然', '愕然',
+    '恥ずかし', '照れ', '気まず', '後ろめた', '罪悪感',
+    
     // 内面の声・状態
-    '衝動', '本能', '理性', '葛藤', '動揺', '混乱', '放心', '呆然', '意地', 'プライド'
+    '衝動', '本能', '理性', '葛藤', '動揺', '混乱', '放心', '呆然', '意地', 'プライド',
+    '冷静', '落ち着', '平静', '集中',
+    
+    // 推測・判断の助詞（重要！）
+    'だろう', 'のか', 'のだ', 'んだ', 'だった', 'かもしれ', 'に違いな',
+    'ようだ', 'みたい', 'らしい', 'っぽい', 'はず', 'べき', 'だけ'
 ];
 
 // ==========================================
@@ -964,8 +981,79 @@ console.log(`五感度: ${sensoryDensity.toFixed(1)}%`);
 console.log(`心理度: ${psychDensity.toFixed(1)}%`);
 console.log(`アクション度: ${actionDensity.toFixed(1)}%`);
 console.log(`情景度: ${sceneDensity.toFixed(1)}%`);
+
+            // ========== 品質チェック（異常パターン検出） ==========
+            let qualityPenalty = 0;
+            const qualityIssues = [];
             
-            const totalDescDensity = sensoryDensity + psychDensity + actionDensity + sceneDensity;
+            // 1. 読点の過剰使用チェック（1文あたり平均5個以上で警告）
+            const commaCount = (text.match(/、/g) || []).length;
+            const commaPerSentence = commaCount / sentenceCount;
+            if (commaPerSentence > 5) {
+                const penalty = Math.min(60, (commaPerSentence - 5) * 12);
+                qualityPenalty += penalty;
+                qualityIssues.push(`読点過多（1文平均${commaPerSentence.toFixed(1)}個）`);
+            }
+            
+            // 2. ルビ（括弧）の乱用チェック
+            const rubyCount = (text.match(/（[^）]+）/g) || []).length;
+            const rubyPerSentence = rubyCount / sentenceCount;
+            if (rubyPerSentence > 1.5) {
+                const penalty = Math.min(40, (rubyPerSentence - 1.5) * 20);
+                qualityPenalty += penalty;
+                qualityIssues.push(`ルビ過多（1文平均${rubyPerSentence.toFixed(1)}個）`);
+            }
+            
+            // 3. 同じ単語の過度な繰り返しチェック（「俺」など）
+            const words = text.match(/[一-龯ぁ-んァ-ヴー]+/g) || [];
+            const wordRepeatFreq = {};
+            words.forEach(w => {
+                if (w.length >= 2) {
+                    wordRepeatFreq[w] = (wordRepeatFreq[w] || 0) + 1;
+                }
+            });
+            const maxRepeat = Math.max(0, ...Object.values(wordRepeatFreq));
+            const totalWords = words.length;
+            if (totalWords > 0 && maxRepeat / totalWords > 0.12) {
+                qualityPenalty += 35;
+                const mostCommon = Object.keys(wordRepeatFreq).find(k => wordRepeatFreq[k] === maxRepeat);
+                qualityIssues.push(`単語の過度な繰り返し（「${mostCommon}」が${maxRepeat}回）`);
+            }
+            
+            // 4. 異常な句読点パターン（「、と、」「、の、」など）
+            const weirdCommaPattern = (text.match(/、[とのがをにへでや]、/g) || []).length;
+            if (weirdCommaPattern > sentenceCount * 0.25) {
+                qualityPenalty += 50;
+                qualityIssues.push('不自然な読点の配置');
+            }
+            
+            // 5. 感嘆符・疑問符の過剰使用
+            const exclamationCount = (text.match(/！{3,}/g) || []).length;
+            if (exclamationCount > sentenceCount * 0.4) {
+                qualityPenalty += 25;
+                qualityIssues.push('感嘆符の過剰使用');
+            }
+            
+            // 6. 三点リーダー・省略記号の異常使用
+            const dotsPattern = (text.match(/\.{3,}|。{2,}/g) || []).length;
+            if (dotsPattern > sentenceCount * 0.5) {
+                qualityPenalty += 20;
+                qualityIssues.push('省略記号の多用');
+            }
+            
+            console.log(`品質ペナルティ: -${qualityPenalty.toFixed(1)}点`, qualityIssues);
+            
+            // 各密度を0-30点に正規化してから合計（最大120点→100点にクリップ）
+            // 係数を上げてスコアが出やすくする
+            const normalizedSensory = Math.min(30, sensoryDensity * 1.2);      // 五感描写
+            const normalizedPsych = Math.min(30, psychDensity * 1.2);          // 心理描写
+            const normalizedAction = Math.min(30, actionDensity * 1.2);        // 動作描写
+            const normalizedScene = Math.min(30, sceneDensity * 1.2);          // 情景描写
+            
+            const rawDescDensity = normalizedSensory + normalizedPsych + normalizedAction + normalizedScene;
+            
+            // 品質ペナルティを適用（最低0点）
+            const totalDescDensity = Math.max(0, Math.min(100, rawDescDensity - qualityPenalty));
             
             const kanjiCount = (text.match(/[一-龯]/g) || []).length;
             const hiraganaCount = (text.match(/[ぁ-ん]/g) || []).length;
@@ -1146,7 +1234,7 @@ console.log("Sample Words:", positiveWords.slice(0, 5), negativeWords.slice(0, 5
             const vocabScore = vocabularyRichness * (w.vocab || 1) * 2.0;
             
             // 他のスコア（底上げボーナスを削減）
-            const descScore = (Math.min(100, totalDescDensity * 1.2) + 5) * (w.description || 1);
+            const descScore = Math.min(100, totalDescDensity * 1.2) * (w.description || 1);  // ボーナス削除
             const dialogScore = (Math.max(0, 100 - Math.abs(dialogRatio - profile.minDialog) * 1.0) + 5) * (w.dialogue || 1);
             const sentimentScore = (Math.min(100, (positiveWords.length + negativeWords.length) * 5) + 5) * (w.sentiment || 1);
             const endingScore = (endingVariety + 10) * (w.ending || 1);
@@ -1167,6 +1255,15 @@ console.log("Sample Words:", positiveWords.slice(0, 5), negativeWords.slice(0, 5
                 totalScore = totalScore * 0.7;  // 30%減点
             } else if (vocabularyRichness < 40) {
                 totalScore = totalScore * 0.85;  // 15%減点
+            }
+            
+            // 描写密度が極端に低い場合も総合点にペナルティ（閾値を下げて緩和）
+            if (totalDescDensity < 5) {
+                totalScore = totalScore * 0.7;  // 30%減点（致命的）
+            } else if (totalDescDensity < 15) {
+                totalScore = totalScore * 0.85;  // 15%減点
+            } else if (totalDescDensity < 30) {
+                totalScore = totalScore * 0.95;  // 5%減点
             }
             
             let rank = 'D';
