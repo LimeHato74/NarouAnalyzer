@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <title>Narou Analyzer Pro V5.0 - Created by ペンギンの搾り汁</title>
-    <meta name="description" content="Web小説執筆者向け超高精度分析ツール。恋愛、ファンタジー、SFなどジャンル別に最適化されたスコアリング。">
+    <title>Narou Analyzer Ultra - Created by ペンギンの搾り汁</title>
+    <meta name="description" content="Web小説執筆者向け高精度分析ツール。恋愛、ファンタジー、SFなどジャンル別に評価">
     
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet" type="text/css" />
@@ -49,7 +49,7 @@
         <div class="flex-1 flex-col items-start">
             <h1 class="text-xl md:text-2xl font-black text-primary flex items-center gap-2 tracking-tighter cursor-pointer" onclick="window.scrollTo(0,0)">
                 <i class="ph-fill ph-pen-nib-straight"></i> 
-                <span>Narou Analyzer <span class="text-secondary">Pro V5.0</span></span>
+                <span>Narou Analyzer <span class="text-secondary">Ultra</span></span>
             </h1>
             <div class="text-[10px] font-bold text-base-content/50 ml-8 -mt-1">Created by ペンギンの搾り汁 | 超高精度版</div>
         </div>
@@ -98,7 +98,12 @@
                         <h2 class="text-sm font-bold text-base-content/70 uppercase tracking-wider">本文入力</h2>
                         <span class="text-xs badge" :class="inputText.length > 2000 ? 'badge-success' : 'badge-ghost'">{{ inputText.length.toLocaleString() }} chars</span>
                     </div>
-                    <textarea v-model="inputText" class="textarea textarea-bordered w-full h-[40vh] lg:h-[60vh] font-mono-jp text-base leading-relaxed resize-none focus:outline-none focus:border-secondary transition-all" placeholder="ここに小説の本文を貼り付けてください。&#10;&#10;V5.0では文末パターン、視点の一貫性、描写密度、接続詞の適切性など、より詳細な分析を行います。"></textarea>
+                    <textarea v-model="inputText" class="textarea textarea-bordered w-full h-[40vh] lg:h-[60vh] font-mono-jp text-base leading-relaxed resize-none focus:outline-none focus:border-secondary transition-all" placeholder="ここに小説の本文を貼り付けてください。&#10;&#10;V5.0 Ultraでは、文末パターン、視点の一貫性、描写密度、接続詞の適切性、語彙の豊かさなど、数十項目の詳細な分析を行います。"></textarea>
+                    <button @click="analyzeText" class="btn btn-secondary btn-lg w-full mt-4 gap-2" :disabled="inputText.length < 100">
+                        <i class="ph-bold ph-magnifying-glass text-xl"></i>
+                        <span class="font-bold">分析開始</span>
+                        <span v-if="inputText.length < 100" class="text-xs opacity-70">(100文字以上必要)</span>
+                    </button>
                 </div>
             </div>
         </section>
@@ -107,13 +112,15 @@
             <div v-if="!stats" class="flex flex-col h-full min-h-[400px]">
                 <div class="flex-1 flex flex-col items-center justify-center text-base-content/30 border-2 border-dashed border-base-300 rounded-3xl p-8 mb-6">
                     <i class="ph-duotone ph-books text-7xl mb-4 animate-pulse text-secondary"></i>
-                    <p class="text-xl font-bold">超高精度ジャンル別解析 V5.0</p>
-                    <p class="text-sm mt-2 opacity-70">恋愛・ファンタジー・SF・文芸など全18カテゴリに対応</p>
+                    <p class="text-xl font-bold">超高精度ジャンル別解析 V5.0 Ultra</p>
+                    <p class="text-sm mt-2 opacity-70">恋愛・ファンタジー・文芸・SFなど全20カテゴリに対応</p>
                     <div class="mt-4 grid grid-cols-2 gap-2 text-xs opacity-60">
                         <div>✓ 文末パターン精密分析</div>
                         <div>✓ 視点一貫性チェック</div>
-                        <div>✓ 描写密度測定</div>
+                        <div>✓ 多次元描写密度測定</div>
                         <div>✓ 冗長表現検出</div>
+                        <div>✓ 語彙の豊かさ評価</div>
+                        <div>✓ 接続詞適切性判定</div>
                     </div>
                     <div class="mt-8 text-xs font-mono opacity-50 bg-base-200 px-4 py-2 rounded-full">Designed by ペンギンの搾り汁</div>
                 </div>
@@ -148,1052 +155,1245 @@
                                             # {{ tag }}
                                         </div>
                                     </div>
-                                    <button @click="shareResult" class="btn btn-sm btn-ghost hover:bg-[#000000] hover:text-white transition-colors gap-2 border border-base-300">
-                                        <i class="ph-fill ph-twitter-logo text-lg"></i>
-                                        Xで結果を共有
+                                    <button @click="shareResult" class="btn btn-sm btn-ghost gap-2">
+                                        <i class="ph-bold ph-share-network"></i>結果共有
                                     </button>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 pt-8 border-t border-base-200">
-                             <div class="h-[280px] relative">
-                                <canvas id="radarChart"></canvas>
-                             </div>
-                             <div class="grid grid-cols-1 gap-3">
-                                <div v-for="(metric, idx) in stats.radarData" :key="idx" class="flex items-center justify-between p-2 rounded hover:bg-base-200 transition-colors">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" :class="getScoreBg(metric.score)">{{ metric.rank }}</div>
-                                        <div>
-                                            <div class="font-bold text-sm">{{ metric.label }}</div>
-                                            <div class="text-[10px] text-base-content/60">{{ metric.desc }}</div>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div v-for="m in stats.mainMetrics" :key="m.label" class="card bg-base-100 shadow-lg">
+                        <div class="card-body p-5">
+                            <div class="text-xs text-base-content/60 font-bold uppercase tracking-wide">{{ m.label }}</div>
+                            <div class="text-3xl font-black text-primary mt-1">{{ m.value }}</div>
+                            <div class="text-xs text-base-content/70 mt-2">{{ m.sub }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-lg">
+                    <div class="card-body p-6">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i class="ph-fill ph-chart-polar text-secondary"></i> ジャンル適合度レーダー
+                        </h3>
+                        <div class="h-[320px] relative">
+                            <canvas id="radarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid lg:grid-cols-2 gap-6">
+                    <div class="card bg-base-100 shadow-lg">
+                        <div class="card-body p-6">
+                            <h3 class="text-lg font-bold mb-3 flex items-center gap-2">
+                                <i class="ph-fill ph-heartbeat text-pink-500"></i> 感情トーン推移
+                            </h3>
+                            <div class="h-[200px]">
+                                <canvas id="sentimentChart"></canvas>
+                            </div>
+                            <div class="text-xs mt-3 opacity-70 text-center">
+                                テキスト全体を通しての感情の起伏を可視化
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card bg-base-100 shadow-lg">
+                        <div class="card-body p-6">
+                            <h3 class="text-lg font-bold mb-3 flex items-center gap-2">
+                                <i class="ph-fill ph-text-aa text-blue-500"></i> 文末パターン分析
+                            </h3>
+                            <div class="space-y-2">
+                                <div v-for="(ep, idx) in stats.contentMetrics.endingPatterns" :key="idx" class="flex items-center gap-3">
+                                    <div class="flex-1">
+                                        <div class="flex justify-between text-sm mb-1">
+                                            <span class="font-mono">{{ ep.pattern }}</span>
+                                            <span class="font-bold">{{ ep.count }}回 ({{ ep.percentage.toFixed(1) }}%)</span>
+                                        </div>
+                                        <div class="w-full bg-base-200 rounded-full h-2">
+                                            <div class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all" :style="{width: ep.percentage + '%'}"></div>
                                         </div>
                                     </div>
-                                    <div class="text-xl font-bold font-mono" :class="getScoreColor(metric.score)">{{ metric.score }}</div>
-                                </div>
-                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
-                    <div class="card bg-base-100 shadow-lg col-span-1 md:col-span-2">
-                        <div class="card-body p-5">
-                            <h3 class="font-bold text-sm text-base-content/70 flex items-center gap-2">
-                                <i class="ph-fill ph-heartbeat text-pink-500"></i> ストーリー感情曲線
-                            </h3>
-                            <div class="relative w-full h-[220px]"><canvas id="sentimentChart"></canvas></div>
-                            <div class="text-xs text-center text-base-content/50 mt-2">※ ジャンル特性により評価基準は異なります。上：快/勝利/好転 下：不快/ピンチ/悲哀</div>
-                        </div>
-                    </div>
-
-                    <div class="card bg-base-100 shadow-lg border-l-4 border-warning">
-                        <div class="card-body p-0">
-                            <div class="p-4 border-b border-base-200 bg-warning/10"><h3 class="card-title text-sm text-base-content"><i class="ph-fill ph-warning-circle text-warning"></i> 修正推奨ポイント</h3></div>
-                            <div class="overflow-y-auto max-h-[300px]">
-                                <table class="table table-sm">
-                                    <tbody>
-                                        <tr v-for="item in adviceList" :key="item.label" class="hover:bg-base-200/50">
-                                            <td class="w-1/3 pl-4 py-3">
-                                                <div class="font-bold text-xs">{{ item.label }}</div>
-                                            </td>
-                                            <td class="pr-4 py-3">
-                                                <div class="flex items-center gap-2 mb-1">
-                                                    <span class="badge badge-sm font-mono" :class="item.statusBadge">{{ item.value }}</span>
-                                                    <span class="text-[10px] text-base-content/60">目安:{{ item.target }}</span>
-                                                </div>
-                                                <div class="text-xs leading-relaxed opacity-80">{{ item.msg }}</div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card bg-base-100 shadow-lg border-l-4 border-info">
-                        <div class="card-body p-5">
-                            <h3 class="font-bold text-sm text-base-content/70 flex items-center gap-2 mb-4"><i class="ph-fill ph-eye text-info"></i> 五感表現 & キーワード</h3>
-                            
-                            <div class="grid grid-cols-3 gap-2 mb-6">
-                                <div v-for="(val, key) in stats.contentMetrics.senses" :key="key" class="text-center p-2 bg-base-200 rounded-lg">
-                                    <div class="text-[10px] uppercase font-bold text-base-content/60 mb-1">{{ key }}</div>
-                                    <div class="radial-progress text-xs font-bold text-primary" :style="{'--value': Math.min(100, val*25), '--size': '2.5rem'}">{{ val }}</div>
                                 </div>
                             </div>
-
-                            <div class="space-y-2">
-                                <div class="text-xs font-bold text-base-content/60">ジャンル重要語・パワーワード</div>
-                                <div class="flex flex-wrap gap-1">
-                                    <span v-for="word in stats.contentMetrics.foundKeywords" :key="word" class="badge badge-outline bg-base-100 text-xs py-2">{{ word }}</span>
-                                    <span v-if="stats.contentMetrics.foundKeywords.length === 0" class="text-xs text-base-content/40">特になし</span>
-                                </div>
+                            <div class="mt-3 text-xs">
+                                <span class="badge badge-sm" :class="stats.contentMetrics.endingVariety >= 70 ? 'badge-success' : stats.contentMetrics.endingVariety >= 50 ? 'badge-warning' : 'badge-error'">
+                                    バリエーション: {{ stats.contentMetrics.endingVariety.toFixed(0) }}点
+                                </span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- NEW: 詳細分析パネル -->
-                <div class="card bg-base-100 shadow-lg border-l-4 border-success">
-                    <div class="card-body p-5">
-                        <h3 class="font-bold text-sm text-base-content/70 flex items-center gap-2 mb-4">
-                            <i class="ph-fill ph-code text-success"></i> 詳細分析レポート (V5.0新機能)
+                <div class="card bg-base-100 shadow-lg">
+                    <div class="card-body p-6">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i class="ph-fill ph-brain text-purple-500"></i> 詳細品質分析
                         </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                            <div class="p-3 bg-base-200 rounded">
-                                <div class="font-bold mb-2 text-base-content/70">文末パターン分析</div>
-                                <div class="space-y-1 text-base-content/60">
-                                    <div>過去形: {{ stats.detailedMetrics.endingPatterns.past }}%</div>
-                                    <div>現在形: {{ stats.detailedMetrics.endingPatterns.present }}%</div>
-                                    <div>体言止め: {{ stats.detailedMetrics.endingPatterns.noun }}%</div>
-                                    <div>リズム変化: {{ stats.detailedMetrics.rhythmVariation }}</div>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div v-for="qm in stats.qualityMetrics" :key="qm.label" class="bg-base-200/50 p-4 rounded-xl">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="font-bold text-sm">{{ qm.label }}</span>
+                                    <span class="badge" :class="getScoreBg(qm.score)">{{ qm.score }}点</span>
                                 </div>
+                                <div class="w-full bg-base-300 rounded-full h-2">
+                                    <div class="h-2 rounded-full transition-all" :class="getScoreColor(qm.score)" :style="{width: qm.score + '%'}"></div>
+                                </div>
+                                <div class="text-xs mt-2 text-base-content/70">{{ qm.comment }}</div>
                             </div>
-                            <div class="p-3 bg-base-200 rounded">
-                                <div class="font-bold mb-2 text-base-content/70">視点・描写分析</div>
-                                <div class="space-y-1 text-base-content/60">
-                                    <div>視点一貫性: {{ stats.detailedMetrics.viewpointConsistency }}</div>
-                                    <div>描写密度: {{ stats.detailedMetrics.descriptiveDensity }}</div>
-                                    <div>心理描写: {{ stats.detailedMetrics.psychologicalDepth }}</div>
-                                    <div>冗長度: {{ stats.detailedMetrics.redundancy }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-lg border-l-4 border-warning">
+                    <div class="card-body p-6">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i class="ph-fill ph-lightbulb text-warning"></i> 改善アドバイス
+                        </h3>
+                        <div class="space-y-3">
+                            <div v-for="(advice, idx) in adviceList" :key="idx" class="alert shadow-sm bg-base-200/50">
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="font-bold text-sm">{{ advice.label }}</span>
+                                        <span class="badge badge-sm" :class="advice.statusBadge">{{ advice.value }}</span>
+                                    </div>
+                                    <div class="text-xs opacity-80">
+                                        <span class="text-base-content/50">目標:</span> {{ advice.target }} 
+                                        <span class="ml-2">→</span> {{ advice.msg }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
             </div>
         </section>
     </main>
 
-    <footer class="footer footer-center p-4 bg-base-300 text-base-content">
-        <div>
-            <p class="font-bold text-xs opacity-60">Created by ペンギンの搾り汁 | Narou Analyzer Pro V5.0</p>
-        </div>
-    </footer>
-
-    <div class="fixed bottom-0 left-0 right-0 p-4 z-40 bg-gradient-to-t from-base-200 via-base-200 to-transparent pointer-events-none">
-        <div class="max-w-md mx-auto pointer-events-auto flex flex-col gap-2">
-            <div v-if="toastMessage" class="alert shadow-lg py-2 text-sm animate-bounce-in" :class="toastType">
-                <i class="ph-fill text-lg" :class="toastIcon"></i><span>{{ toastMessage }}</span>
-            </div>
-            <button @click="analyzeText" :disabled="isProcessing || inputText.length < 10" class="btn btn-primary btn-lg w-full shadow-2xl border-t border-white/20 transition-all hover:scale-[1.02]">
-                <span v-if="isProcessing" class="loading loading-dots loading-md"></span>
-                <span v-else class="flex items-center gap-2 font-bold text-lg"><i class="ph-bold ph-lightning"></i> 超高精度AI解析 (V5.0)</span>
-            </button>
+    <div v-if="toastMessage" class="toast toast-top toast-center z-[100] animate-bounce-in">
+        <div class="alert shadow-lg" :class="toastType">
+            <i :class="toastIcon" class="text-xl"></i>
+            <span class="font-bold">{{ toastMessage }}</span>
         </div>
     </div>
 </div>
 
 <script>
-    // --- ENHANCED GENRE DEFINITIONS ---
-    const GENRE_PARAMS = {
-        'love_isekai': { 
-            group: '恋愛', name: '異世界[恋愛]', 
-            desc: '恋愛を主題とし、異世界を主な舞台とした作品。',
-            targetLen: 45, minDialog: 40, 
-            weights: { rhythm: 25, immersion: 35, grammar: 15, story: 25 },
-            keywords: ['婚約破棄','王子','公爵','聖女','悪役令嬢','溺愛','ざまぁ','転生','乙女ゲーム','追放','魔力','王宮'],
-            rhythmPreference: 'varied', // 変化に富むリズム
-            dialogImportance: 'high' // 会話重視
-        },
-        'love_real': { 
-            group: '恋愛', name: '現実世界[恋愛]', 
-            desc: '恋愛を主題とし、現実に近しい世界を舞台とした作品。',
-            targetLen: 50, minDialog: 45, 
-            weights: { rhythm: 20, immersion: 40, grammar: 20, story: 20 },
-            keywords: ['先輩','後輩','学校','オフィス','結婚','同棲','幼馴染','カフェ','部活','告白','デート','キス'],
-            rhythmPreference: 'natural',
-            dialogImportance: 'very_high'
-        },
-        'high_fantasy': { 
-            group: 'ファンタジー', name: 'ハイファンタジー', 
-            desc: '現実世界とは異なる世界を主な舞台とした作品。',
-            targetLen: 65, minDialog: 20, 
-            weights: { rhythm: 20, immersion: 30, grammar: 20, story: 30 },
-            keywords: ['魔法','剣','ドラゴン','エルフ','魔王','勇者','冒険','ギルド','スキル','ステータス','ダンジョン','魔術'],
-            rhythmPreference: 'epic',
-            dialogImportance: 'medium'
-        },
-        'low_fantasy': { 
-            group: 'ファンタジー', name: 'ローファンタジー', 
-            desc: '現実世界に近しい世界にファンタジー要素を取り入れた作品。',
-            targetLen: 55, minDialog: 30, 
-            weights: { rhythm: 25, immersion: 25, grammar: 25, story: 25 },
-            keywords: ['ダンジョン','陰陽師','超能力','妖怪','現代','配信','探索者','ゲート','異能','霊'],
-            rhythmPreference: 'balanced',
-            dialogImportance: 'medium'
-        },
-        'pure_lit': { 
-            group: '文芸', name: '純文学', 
-            desc: '芸術性に重きを置いた作品。',
-            targetLen: 70, minDialog: 15, 
-            weights: { rhythm: 15, immersion: 20, grammar: 45, story: 20 },
-            keywords: ['私','生','死','孤独','故郷','風景','憂鬱','哲学','美','沈黙','記憶'],
-            rhythmPreference: 'literary',
-            dialogImportance: 'low'
-        },
-        'human_drama': { 
-            group: '文芸', name: 'ヒューマンドラマ', 
-            desc: '人と人との交流、人の一生、人間らしさ等を主題とした作品。',
-            targetLen: 60, minDialog: 35, 
-            weights: { rhythm: 20, immersion: 40, grammar: 20, story: 20 },
-            keywords: ['家族','仕事','人生','涙','成長','別れ','再会','友情','絆','葛藤'],
-            rhythmPreference: 'emotional',
-            dialogImportance: 'high'
-        },
-        'history': { 
-            group: '文芸', name: '歴史', 
-            desc: '過去を舞台にした作品。時代小説、タイムトラベルものを含む。',
-            targetLen: 65, minDialog: 25, 
-            weights: { rhythm: 20, immersion: 30, grammar: 30, story: 20 },
-            keywords: ['侍','城','戦争','将軍','刀','幕府','姫','タイムスリップ','合戦','家臣'],
-            rhythmPreference: 'formal',
-            dialogImportance: 'medium'
-        },
-        'mystery': { 
-            group: '文芸', name: '推理', 
-            desc: '事件等を推理し、謎解きを行う過程を主体とした作品。',
-            targetLen: 60, minDialog: 30, 
-            weights: { rhythm: 15, immersion: 20, grammar: 35, story: 30 },
-            keywords: ['トリック','犯人','証拠','密室','刑事','探偵','アリバイ','動機','殺人','推理'],
-            rhythmPreference: 'logical',
-            dialogImportance: 'medium'
-        },
-        'horror': { 
-            group: '文芸', name: 'ホラー', 
-            desc: '読者に恐怖感を与えることを主題とした作品。',
-            targetLen: 40, minDialog: 20, 
-            weights: { rhythm: 30, immersion: 40, grammar: 10, story: 20 },
-            keywords: ['幽霊','呪い','血','闇','悲鳴','死','狂気','ストーカー','怪異','恐怖'],
-            rhythmPreference: 'tense',
-            dialogImportance: 'low'
-        },
-        'action': { 
-            group: '文芸', name: 'アクション', 
-            desc: '戦闘描写、アクションシーンを主体とした作品。',
-            targetLen: 35, minDialog: 15, 
-            weights: { rhythm: 45, immersion: 25, grammar: 10, story: 20 },
-            keywords: ['銃','剣','拳','爆発','衝撃','回避','追跡','敵','戦場','必殺'],
-            rhythmPreference: 'fast',
-            dialogImportance: 'low'
-        },
-        'comedy': { 
-            group: '文芸', name: 'コメディー', 
-            desc: '読者を笑わせることを主題とした作品。',
-            targetLen: 40, minDialog: 55, 
-            weights: { rhythm: 35, immersion: 25, grammar: 10, story: 30 },
-            keywords: ['爆笑','ツッコミ','勘違い','変人','ドタバタ','カオス','不幸','ボケ'],
-            rhythmPreference: 'snappy',
-            dialogImportance: 'very_high'
-        },
-        'vr_game': { 
-            group: 'SF', name: 'VRゲーム', 
-            desc: 'VR技術を利用したゲームが主体となる作品。',
-            targetLen: 45, minDialog: 30, 
-            weights: { rhythm: 30, immersion: 25, grammar: 20, story: 25 },
-            keywords: ['VRMMO','ログイン','NPC','クエスト','運営','フレンド','アバター','バグ','ギルド'],
-            rhythmPreference: 'game_like',
-            dialogImportance: 'medium'
-        },
-        'space': { 
-            group: 'SF', name: '宇宙', 
-            desc: '宇宙を舞台とした作品。',
-            targetLen: 60, minDialog: 20, 
-            weights: { rhythm: 20, immersion: 30, grammar: 30, story: 20 },
-            keywords: ['宇宙船','惑星','銀河','エイリアン','AI','ワープ','星','帝国','艦隊'],
-            rhythmPreference: 'grand',
-            dialogImportance: 'low'
-        },
-        'science_fantasy': { 
-            group: 'SF', name: '空想科学', 
-            desc: '実在、非実在を問わず、何らかの技術・理論の要素を含む作品。',
-            targetLen: 65, minDialog: 20, 
-            weights: { rhythm: 15, immersion: 25, grammar: 35, story: 25 },
-            keywords: ['ロボット','アンドロイド','実験','博士','理論','未来','進化','機械','テクノロジー'],
-            rhythmPreference: 'technical',
-            dialogImportance: 'low'
-        },
-        'panic': { 
-            group: 'SF', name: 'パニック', 
-            desc: '天災・汚染・大事故・侵略等の危機的状況下を舞台とした作品。',
-            targetLen: 45, minDialog: 25, 
-            weights: { rhythm: 40, immersion: 35, grammar: 10, story: 15 },
-            keywords: ['ウイルス','感染','ゾンビ','地震','崩壊','脱出','サバイバル','食料','避難'],
-            rhythmPreference: 'urgent',
-            dialogImportance: 'medium'
-        },
-        'fairytale': { 
-            group: 'その他', name: '童話', 
-            desc: '幼年、児童に向けた内容の読み物。',
-            targetLen: 30, minDialog: 30, 
-            weights: { rhythm: 40, immersion: 30, grammar: 10, story: 20 },
-            keywords: ['森','動物','魔法','王様','お姫様','冒険','友達','約束','やさしい'],
-            rhythmPreference: 'simple',
-            dialogImportance: 'medium'
-        },
-        'poetry': { 
-            group: 'その他', name: '詩', 
-            desc: '言葉に美と響きを乗せて想いを表現している作品。',
-            targetLen: 20, minDialog: 0, 
-            weights: { rhythm: 70, immersion: 30, grammar: 0, story: 0 },
-            keywords: ['風','空','心','愛','夢','光','影','花','時','魂'],
-            rhythmPreference: 'poetic',
-            dialogImportance: 'none'
-        },
-        'essay': { 
-            group: 'その他', name: 'エッセイ', 
-            desc: '個人的観点により思想や物事を論じている作品。',
-            targetLen: 55, minDialog: 5, 
-            weights: { rhythm: 20, immersion: 10, grammar: 40, story: 30 },
-            keywords: ['私','思う','最近','生活','社会','趣味','考え','日々','感じ'],
-            rhythmPreference: 'conversational',
-            dialogImportance: 'very_low'
-        },
-        'replay': { 
-            group: 'その他', name: 'リプレイ', 
-            desc: 'TRPGのプレイ結果を文章にて記録したもの。',
-            targetLen: 40, minDialog: 80, 
-            weights: { rhythm: 30, immersion: 50, grammar: 10, story: 10 },
-            keywords: ['GM','PL','判定','ダイス','成功','失敗','クリティカル','ファンブル','ロール'],
-            rhythmPreference: 'transcript',
-            dialogImportance: 'extreme'
-        }
-    };
+const { createApp, ref, computed, watch, onMounted, nextTick } = Vue;
 
-    // --- ENHANCED DICTIONARIES ---
-    const DICT = {
-        pos: ['好き','愛','嬉しい','楽しい','幸せ','笑','希望','成功','美しい','最高','安心','温かい','喜び','勝利','素敵','感謝','仲間','絆','救い','優雅','可憐','爽快','尊い','ドキドキ','ワクワク','至福','伝説','最強','無双','圧倒','拍手','認め','信頼','抱擁','キス','結婚','達成','獲得','解決','回復','快感','微笑','輝','栄光','祝福'],
-        neg: ['嫌い','憎','悲しい','辛い','苦しい','涙','絶望','失敗','醜い','最悪','不安','冷たい','怒り','敗北','死','殺','痛','怖い','恐怖','孤独','裏切り','叫','血','傷','呪','別れ','失う','奪','地獄','全滅','クソ','ゴミ','愚か','無駄','後悔','残念','残酷','無理','限界','絶叫','悪夢','絶命'],
-        senses: {
-            sight: ['見る','見え','視線','色','赤','青','黒','白','輝','暗','光','姿','景色','瞳','鮮','映','金','銀','紫','眺','目撃','髪','肌','輪郭','影','闇','閃光','煌','眩','美','姿','容姿','表情'],
-            sound: ['聞','音','声','響','静寂','叫','囁','歌','騒','耳','轟','メロディ','悲鳴','ざわ','沈黙','爆音','足音','鐘','言葉','怒号','吐息','歓声','呟','笑い声','泣き声'],
-            touch: ['痛','熱','冷','触','震','重','軽','硬','柔','風','撫','殴','体温','痺','湿','乾','衝撃','ふわ','さら','ぬる','肌触り','手触り','圧','ざら','滑']
-        },
-        // 新規追加: 接続詞辞書
-        conjunctions: {
-            logical: ['しかし','だが','けれども','ところが','それでも','そのため','したがって','つまり','要するに','なぜなら'],
-            temporal: ['そして','それから','その後','やがて','すると','ついに','まもなく','同時に'],
-            causal: ['だから','ゆえに','そのため','したがって','それゆえ'],
-            adversative: ['しかし','だが','けれど','ところが','にもかかわらず']
-        },
-        // 新規追加: 冗長表現
-        redundant: ['することができる','という風に','というような','のような感じ','みたいな','って感じ','といった','ということ','というもの','～たりする','～だったりする'],
-        // 新規追加: 形容詞・副詞
-        adjectives: ['美しい','綺麗','素敵','優しい','穏やか','静か','激しい','速い','遅い','大きい','小さい','高い','低い','深い','浅い','広い','狭い','明るい','暗い','温かい','冷たい','柔らかい','硬い','強い','弱い'],
-        adverbs: ['とても','非常に','かなり','少し','やや','ほんの','まるで','まさに','ちょうど','すぐに','ゆっくり','急に','突然','やがて','ついに','既に','未だ','もう','まだ']
-    };
+createApp({
+    setup() {
+        const inputText = ref('');
+        const selectedGenre = ref('love_isekai');
+        const isProcessing = ref(false);
+        const stats = ref(null);
+        const adviceList = ref([]);
+        const isDarkMode = ref(false);
+        const toastMessage = ref('');
+        const toastType = ref('');
+        const toastIcon = ref('');
 
-    const { createApp, ref, computed, watch, nextTick } = Vue;
+        let radarChart = null;
+        let sentimentChart = null;
 
-    createApp({
-        setup() {
-            const inputText = ref('');
-            const selectedGenre = ref('love_isekai');
-            const isProcessing = ref(false);
-            const stats = ref(null);
-            const adviceList = ref([]);
-            const isDarkMode = ref(false);
-            const toastMessage = ref('');
-            const toastType = ref('');
-            let radarChart = null;
-            let sentimentChart = null;
+        const scoringProfiles = {
+          love_isekai: {
+    name: '恋愛（異世界）',
+    desc: '恋愛を主題とし、異世界を主な舞台とした作品。',
+    targetLen: 48,
+    minDialog: 42,
+    weights: { vocab: 1.4, description: 1.5, dialogue: 1.5, sentiment: 1.4, ending: 1.3, viewpoint: 1.2, tempo: 1.3, redundancy: 1.2, connector: 1.1, keyword: 1.4 },
+    keywords: '恋|愛|心|想い|気持ち|好き|嫌い|切ない|胸|ドキドキ|見つめ|笑顔|涙|抱き|手|唇|キス|告白|異世界|魔法|転生|冒険|' +
+              '高鳴|鼓動|ときめき|焦がれ|熱|温もり|冷た|震え|赤面|頬|染め|視線|瞳|交わ|触れ|指先|髪|撫で|腰|背中|吐息|息遣い|香り|匂い|甘い|苦しい|辛い|嫉妬|独占|羨望|軽蔑|侮蔑|絶望|希望|信頼|裏切り|許し|誓い|永遠|運命|絆|予感|直感|戸惑い|躊躇|覚悟|決意|安らぎ|幸福|幸せ|不幸せ|哀れ|惨め|誇り|プライド|狂気|執着|依存|純愛|初恋|失恋|未練|復縁|両片思い|すれ違い|身分差|政略|契約|偽装|真実|嘘|秘密|噂|誤解|' +
+              '私|俺|僕|貴方|君|お前|彼|彼女|少女|少年|令嬢|淑女|紳士|王子|王太子|殿下|陛下|王|王妃|側室|公爵|侯爵|伯爵|子爵|男爵|辺境伯|騎士|団長|宰相|側近|従者|執事|メイド|侍女|教育係|家庭教師|聖女|巫女|女神|神|精霊|魔王|勇者|冒険者|ギルド|受付|商人|平民|奴隷|ヒロイン|悪役|悪役令嬢|取り巻き|ライバル|当て馬|モブ|転生者|憑依|トリップ|' +
+              '出会い|再会|別れ|婚約|結婚|婚姻|求婚|プロポーズ|破棄|解消|断罪|追放|処刑|監禁|軟禁|離縁|離婚|初夜|寵愛|溺愛|愛され|冷遇|虐げ|放置|ざまぁ|ザマァ|逆転|成り上がり|チート|無双|スキル|ステータス|レベル|鑑定|アイテム|ポーション|ドレス|宝石|舞踏会|夜会|パーティー|お茶会|サロン|学園|授業|図書室|バルコニー|庭園|教会|大聖堂|神殿|ダンジョン|森|王都|スローライフ|開拓|料理|薬草|もふもふ|乙女ゲーム|シナリオ|フラグ|ルート|攻略|バッドエンド|ハッピーエンド|前世|記憶|知識|現代|日本'
+},
+            love_real: {
+    name: '恋愛（現実世界）',
+    desc: '恋愛を主題とし、現実に近しい世界を舞台とした作品。',
+    targetLen: 45,
+    minDialog: 45,
+    weights: { vocab: 1.4, description: 1.5, dialogue: 1.6, sentiment: 1.5, ending: 1.3, viewpoint: 1.2, tempo: 1.3, redundancy: 1.2, connector: 1.2, keyword: 1.3 },
+    keywords: '恋|愛|心|想い|気持ち|好き|嫌い|切ない|胸|ドキドキ|見つめ|笑顔|涙|抱き|手|唇|キス|告白|デート|学校|仕事|日常|' +
+              '高鳴|鼓動|ときめき|熱|温もり|冷た|震え|赤面|頬|染め|視線|瞳|指先|髪|撫で|腰|背中|吐息|息遣い|香り|匂い|甘い|苦しい|辛い|嫉妬|独占|焦|不安|期待|絶望|希望|信頼|裏切り|誓い|運命|絆|予感|直感|戸惑い|躊躇|覚悟|安らぎ|幸福|幸せ|狂気|執着|依存|純愛|初恋|失恋|未練|復縁|両片思い|すれ違い|片思い|秘密|嘘|誤解|駆け引き|' +
+              '私|俺|僕|貴方|君|お前|彼|彼女|彼氏|元カレ|元カノ|幼馴染|先輩|後輩|同級生|先生|上司|部下|同僚|社長|秘書|夫婦|妻|夫|旦那|嫁|婚約者|パートナー|セフレ|ライバル|友人|親友|家族|兄弟|姉妹|' +
+              '教室|授業|放課後|部活|マネージャー|朝練|合宿|制服|リボン|ネクタイ|ブレザー|セーラー|席|隣|廊下|屋上|体育館|グラウンド|図書室|保健室|テスト|試験|勉強|受験|塾|文化祭|体育祭|修学旅行|卒業|入学|クラス|夏休み|冬休み|春休み|' +
+              '会社|職場|オフィス|残業|定時|有給|出張|転勤|就職|転職|退職|飲み会|接待|スーツ|名刺|給料|ボーナス|ブラック|ホワイト|会議|プレゼン|営業|事務|' +
+              'スマホ|携帯|iPhone|LINE|ライン|LINE|メール|電話|通話|メッセージ|既読|未読|返信|着信|通知|ブロック|スタンプ|SNS|ツイッター|インスタ|写真|動画|アプリ|ゲーム|画面|充電|' +
+              '家|部屋|鍵|アパート|マンション|同棲|一人暮らし|実家|玄関|リビング|ソファ|ベッド|布団|枕|キッチン|料理|ご飯|エプロン|お風呂|シャワー|洗面所|歯ブラシ|パジャマ|ベランダ|洗濯|掃除|スーパー|コンビニ|駅|電車|満員|バス|改札|定期|車|ドライブ|助手席|信号|渋滞|' +
+              'クリスマス|イブ|バレンタイン|ホワイトデー|チョコ|誕生日|バースデー|プレゼント|ケーキ|花束|指輪|アクセサリー|遊園地|テーマパーク|観覧車|映画|水族館|動物園|海|プール|花火|祭り|浴衣|神社|初詣|お守り|カラオケ|カフェ|喫茶店|レストラン|居酒屋|バー|ホテル|ラブホ|公園|ベンチ|夜景|イルミネーション|お見合い|婚活|合コン|街コン|マッチング|ナンパ|浮気|不倫|離婚|再婚'
+},
+         fantasy_high: {
+    name: 'ハイファンタジー',
+    desc: '現実世界とは異なる世界を主な舞台とした作品。',
+    targetLen: 55,
+    minDialog: 35,
+    weights: { vocab: 1.5, description: 1.6, dialogue: 1.3, sentiment: 1.2, ending: 1.2, viewpoint: 1.2, tempo: 1.3, redundancy: 1.2, connector: 1.2, keyword: 1.5 },
+    keywords: '魔法|魔術|剣|冒険|ドラゴン|エルフ|ドワーフ|魔王|勇者|王国|城|ダンジョン|モンスター|スキル|レベル|異世界|転生|' +
+              'ステータス|能力値|鑑定|アイテムボックス|収納|インベントリ|ランク|パーティ|クエスト|依頼|ギルド|報酬|素材|魔石|解体|金貨|銀貨|銅貨|物価|市場|行商|' +
+              '召喚|転移|憑依|チート|無双|最強|最弱|底辺|追放|ざまぁ|復讐|逆転|成り上がり|覚醒|進化|成長|修行|師匠|弟子|天才|凡人|劣等|' +
+              '火|水|風|土|雷|氷|光|闇|聖|無|属性|相性|詠唱|無詠唱|魔力|マナ|MP|HP|回復|治癒|ポーション|結界|付与|エンチャント|呪い|デバフ|バフ|' +
+              '攻撃|防御|回避|斬撃|刺突|打撃|武技|奥義|必殺|剣聖|剣豪|聖剣|魔剣|盾|鎧|ローブ|杖|ダガー|槍|弓|矢|' +
+              '魔物|ゴブリン|オーク|スライム|ウルフ|オーガ|ワイバーン|キメラ|アンデッド|スケルトン|ゾンビ|リッチ|ヴァンパイア|悪魔|天使|神|女神|精霊|妖精|獣人|魔族|' +
+              '帝国|皇国|公国|辺境|領地|領主|貴族|平民|奴隷|商会|神殿|教会|聖女|賢者|魔導師|騎士|団長|衛兵|盗賊|暗殺者|ネクロマンサー|テイマー|召喚士|錬金術|鍛冶|' +
+              '迷宮|深層|階層|ボス|宝箱|トラップ|罠|野営|キャンプ|森|洞窟|荒野|遺跡|塔|海|空|戦場|戦争|軍|戦略|戦術|勝利|敗北|全滅|撤退|' +
+              '伝説|神話|歴史|古代|文明|遺物|アーティファクト|禁忌|封印|解放|契約|従魔|使い魔|相棒|仲間|裏切り|信頼|絆|運命|世界|覇権'
+},
+          fantasy_low: {
+    name: 'ローファンタジー',
+    desc: '現実世界に近しい世界にファンタジー要素を取り入れた作品。',
+    targetLen: 50,
+    minDialog: 40,
+    weights: { vocab: 1.4, description: 1.4, dialogue: 1.4, sentiment: 1.3, ending: 1.3, viewpoint: 1.2, tempo: 1.3, redundancy: 1.2, connector: 1.2, keyword: 1.3 },
+    keywords: '不思議|異世界|能力|魔法|幽霊|妖怪|神|現代|日常|学校|街|普通|特別|現実|' +
+              'ダンジョン|迷宮|ゲート|穴|発生|出現|スタンピード|アウトブレイク|氾濫|崩壊|モンスター|魔物|オーク|ゴブリン|スライム|ドラゴン|素材|魔石|ドロップ|換金|買取|円|億|借金|返済|協会|ギルド|管理|政府|自衛隊|警察|特殊|対策|課|庁|ライセンス|証|ランク|等級|S級|最弱|最強|探索|シーカー|探索者|ハンター|攻略|' +
+              'ステータス|スキル|レベル|鑑定|アイテム|インベントリ|ボックス|収納|ショップ|ガチャ|ポイント|課金|ログ|通知|ウィンドウ|システム|ボード|画面|表示|覚醒|進化|固有|ユニーク|天与|チート|無双|隠蔽|隠す|正体|' +
+              '配信|動画|生放送|ライブ|チャンネル|登録|同接|視聴|リスナー|コメント|スパチャ|投げ銭|収益|広告|バズ|炎上|祭り|特定|晒し|掲示板|スレ|SNS|ツイッター|トレンド|拡散|アンチ|信者|有名|人気|インフルエンサー|VTuber|ストリーマー|ドローン|カメラ|' +
+              '陰陽|退魔|除霊|祓|呪い|霊|悪霊|怨霊|あやかし|怪異|オカルト|都市伝説|神社|鳥居|寺|結界|術|式神|巫女|霊能|超能力|エスパー|サイキック|異能|学園|生徒会|抗争|' +
+              '帰還|逆行|再会|転移|招喚|干渉|侵食|東京|日本|新宿|渋谷|ダンジョンおじさん|スマホ|ニュース|緊急|速報|警報|避難|日常|パニック|マンション|アパート|コンビニ|スーパー|バイト|社畜|ブラック|残業|会社|辞表|退職'
+},
+            literary_pure: {
+    name: '純文学',
+    desc: '芸術性に重きを置いた作品。',
+    targetLen: 70,
+    minDialog: 20,
+    weights: { vocab: 1.8, description: 1.7, dialogue: 1.1, sentiment: 1.4, ending: 1.4, viewpoint: 1.4, tempo: 1.1, redundancy: 1.5, connector: 1.4, keyword: 1.0 },
+    keywords: '心|魂|生|死|時間|記憶|意識|存在|孤独|沈黙|風景|影|光|美|芸術|' +
+              '憂鬱|虚無|焦燥|葛藤|矛盾|諦念|哀しみ|嘆き|慈しみ|憐れみ|安らぎ|苦悩|絶望|希望|幸福|不幸|罪|罰|倫理|道徳|真理|哲学|宗教|神|悪魔|人間|自我|エゴ|無意識|深層|夢|現|幻|幻想|妄想|狂気|正気|理性|感性|本能|衝動|情動|愛憎|嫉妬|羨望|侮蔑|軽蔑|尊厳|恥|誇り|' +
+              '雨|風|雪|雲|霧|霞|雷|嵐|空|海|波|凪|潮|川|水|雫|滴|月|星|太陽|陽射し|木漏れ日|夕暮れ|黄昏|夜明け|黎明|朝|昼|夕|夜|深夜|未明|季節|春|夏|秋|冬|桜|花|樹木|枯葉|落葉|蝉|鳥|虫|蝶|獣|猫|犬|金魚|' +
+              '静寂|静謐|喧騒|雑踏|路地|坂道|石畳|アスファルト|コンクリート|壁|窓|ガラス|鏡|カーテン|部屋|鍵|扉|廊下|階段|屋根|天井|床|畳|襖|障子|庭|縁側|アパート|団地|駅|線路|踏切|電車|バス|街灯|公園|ベンチ|ブランコ|' +
+              '色|匂い|香り|音|声|響き|肌|触感|手触り|温度|熱|冷気|温もり|痛み|傷|痕|血|骨|灰|墓|葬儀|喪服|遺影|線香|煙草|紫煙|灰皿|酒|グラス|ボトル|珈琲|紅茶|本|書物|活字|インク|ペン|手紙|日記|写真|' +
+              '永遠|刹那|瞬間|無限|有限|境界|彼岸|此岸|深淵|奈落|浮遊|沈殿|消失|消滅|崩壊|再生|輪廻|運命|偶然|必然|日常|非日常|社会|世間|他人|家族|父|母|兄|姉|弟|妹|祖父|祖母|友人|恋人|別れ|再会|喪失|欠落|空虚'
+},
+           literary_human: {
+    name: 'ヒューマンドラマ',
+    desc: '人と人との交流、人の一生、人間らしさ等を主題とした作品。',
+    targetLen: 55,
+    minDialog: 40,
+    weights: { vocab: 1.5, description: 1.5, dialogue: 1.5, sentiment: 1.4, ending: 1.3, viewpoint: 1.3, tempo: 1.2, redundancy: 1.3, connector: 1.3, keyword: 1.2 },
+    keywords: '人生|家族|友情|絆|別れ|出会い|成長|葛藤|決断|後悔|希望|愛|人間|心|感情|' +
+              '父|母|パパ|ママ|お父さん|お母さん|親父|お袋|祖父|祖母|じいちゃん|ばあちゃん|息子|娘|兄弟|姉妹|兄|弟|姉|妹|孫|親戚|叔父|叔母|従兄弟|義父|義母|夫婦|夫|妻|嫁|姑|婿|親子|家庭|一家|団欒|独り|' +
+              '友人|親友|幼馴染|仲間|相棒|隣人|恩師|先生|生徒|同僚|上司|部下|先輩|後輩|他人|世間|社会|地域|故郷|田舎|都会|近所|路地|商店街|公園|病院|学校|職場|' +
+              '誕生|産声|妊娠|出産|赤ちゃん|子供|大人|老人|高齢|寿命|死|他界|葬式|葬儀|墓|仏壇|遺影|法事|遺産|相続|介護|認知症|車椅子|入院|手術|退院|見舞い|健康|病気|怪我|障害|リハビリ|' +
+              '結婚|離婚|再婚|婚活|見合い|別居|同居|里帰り|帰省|家出|反抗期|初恋|失恋|喧嘩|仲直り|謝罪|許し|感謝|ありがとう|ごめん|涙|泣き|笑顔|笑い声|怒り|叫び|抱擁|握手|温もり|' +
+              '仕事|就職|退職|定年|リストラ|失業|貧乏|借金|裕福|成功|失敗|挫折|夢|目標|現実|平凡|特別|才能|努力|苦労|給料|生活|暮らし|家計|節約|贅沢|' +
+              '食事|ご飯|朝食|昼食|夕食|晩酌|弁当|おにぎり|味噌汁|カレー|肉じゃが|手料理|味|匂い|湯気|食卓|箸|茶碗|台所|キッチン|スーパー|買い物|値引き|' +
+              '春|夏|秋|冬|桜|海|紅葉|雪|正月|大晦日|クリスマス|盆|祭り|花火|誕生日|記念日|プレゼント|手紙|写真|アルバム|思い出|記憶|過去|未来|現在|時間|時計|日記|約束|秘密|嘘|真実|信頼|裏切り|誤解'
+},
+           literary_history: {
+    name: '歴史',
+    desc: '過去を舞台にした作品。時代小説、タイムトラベルものを含む。',
+    targetLen: 60,
+    minDialog: 30,
+    weights: { vocab: 1.7, description: 1.5, dialogue: 1.3, sentiment: 1.2, ending: 1.2, viewpoint: 1.3, tempo: 1.2, redundancy: 1.3, connector: 1.3, keyword: 1.4 },
+    keywords: '侍|武士|武将|兵|軍勢|騎馬|刀|剣|槍|弓|鉄砲|火縄銃|甲冑|鎧|兜|城|天守|石垣|堀|殿|主君|家臣|郎党|姫|奥方|側室|将軍|大名|公方|幕府|朝廷|帝|天皇|公家|関白|太閤|執権|戦|合戦|戦場|陣|本陣|首|天下|統一|野望|覇権|江戸|京|都|大坂|鎌倉|室町|安土|戦国|乱世|泰平|明治|大正|維新|幕末|新選組|志士|浪人|牢人|忍者|忍び|間者|草|百姓|農民|町人|商人|職人|長屋|屋敷|遊郭|吉原|花魁|遊女|芸者|茶屋|旅籠|宿場|街道|関所|忠義|忠誠|裏切り|謀反|下克上|切腹|介錯|仇討ち|成敗|処刑|武士道|義理|人情|面目|恥|誉れ|家名|跡継ぎ|養子|政略|一揆|参勤交代|年貢|石高|米|酒|茶|着物|袴|帯|髷|刀傷|血|歴史|時代|過去|未来|現代|タイムスリップ|タイムトラベル|転移|逆行|改変|史実|正史|IF|知識|内政|改革|西洋|黒船|開国|攘夷'
+},
+         literary_mystery: {
+    name: '推理',
+    desc: '事件等を推理し、謎解きを行う過程を主体とした作品。',
+    targetLen: 55,
+    minDialog: 35,
+    weights: { vocab: 1.5, description: 1.5, dialogue: 1.4, sentiment: 1.2, ending: 1.3, viewpoint: 1.4, tempo: 1.3, redundancy: 1.4, connector: 1.5, keyword: 1.3 },
+    keywords: '事件|殺人|犯人|推理|証拠|アリバイ|トリック|謎|手がかり|捜査|刑事|探偵|真相|犯罪|' +
+              '死体|遺体|被害者|加害者|容疑者|参考人|目撃者|共犯|黒幕|真犯人|愉快犯|サイコパス|ストーカー|遺族|冤罪|名探偵|助手|ワトソン|警部|警視|鑑識|検死|解剖|弁護士|検事|警察|公安|組織|' +
+              '現場|保存|検証|規制線|聞き込み|張り込み|尾行|事情聴取|取り調べ|自供|黙秘|否認|自首|逮捕|令状|時効|未解決|コールドケース|' +
+              '密室|クローズドサークル|孤島|洋館|嵐|雪山|山荘|地下室|屋根裏|廃墟|鍵|施錠|抜け道|隠し通路|' +
+              '刺殺|絞殺|毒殺|撲殺|銃殺|溺死|焼死|自殺|他殺|事故|病死|偽装|工作|見立て|バラバラ|猟奇|連続|誘拐|脅迫|人質|身代金|強盗|窃盗|放火|' +
+              '凶器|ナイフ|拳銃|ロープ|毒|青酸カリ|薬物|睡眠薬|指紋|足跡|血痕|ルミノール|DNA|毛髪|硝煙|唾液|歯型|死亡推定時刻|死因|' +
+              '動機|怨恨|復讐|嫉妬|痴情|金銭|借金|遺産|保険金|口封じ|突発|計画|衝動|正当防衛|緊急避難|殺意|悪意|' +
+              '論理|ロジック|演繹|帰納|消去法|矛盾|破綻|嘘|心理|観察|洞察|違和感|直感|仮説|証明|論破|指摘|暴く|解明|解決|' +
+              '伏線|回収|ミスリード|叙述|どんでん返し|暗号|ダイイングメッセージ|予告状|挑戦状|不在証明|入替え|双子|変装|指名手配|防犯カメラ|通話履歴|GPS|SNS|拡散'
+},
+            literary_horror: {
+    name: 'ホラー',
+    desc: '読者に恐怖感を与えることを主題とした作品。',
+    targetLen: 50,
+    minDialog: 30,
+    weights: { vocab: 1.4, description: 1.7, dialogue: 1.2, sentiment: 1.5, ending: 1.4, viewpoint: 1.3, tempo: 1.4, redundancy: 1.2, connector: 1.2, keyword: 1.3 },
+    keywords: '恐怖|怖い|不気味|闇|影|血|死|叫び|悲鳴|震え|心臓|背筋|冷や汗|幽霊|怪異|呪い|' +
+              '暗闇|漆黒|深夜|丑三つ時|夜道|街灯|点滅|停電|霧|雨|嵐|雷|静寂|無音|耳鳴り|異臭|腐臭|生臭い|カビ|埃|廃墟|廃屋|事故物件|トンネル|病院|学校|トイレ|鏡|井戸|隙間|押し入れ|ベッドの下|地下室|屋根裏|廊下|階段|エレベーター|' +
+              '悪寒|鳥肌|戦慄|パニック|錯乱|狂気|発狂|正気|幻覚|幻聴|妄想|悪夢|金縛り|麻痺|呼吸|過呼吸|息切れ|動悸|鼓動|激痛|苦痛|吐き気|嘔吐|失禁|気絶|呆然|凝視|硬直|' +
+              '視線|気配|足音|物音|ノック|ラップ音|軋む|開く|閉まる|覗く|見つめる|追いかける|逃げる|隠れる|迫る|這う|掴む|触れる|撫でる|囁く|笑う|泣く|睨む|' +
+              '怨霊|悪霊|生霊|地縛霊|浮遊霊|亡霊|死神|悪魔|妖怪|化け物|怪物|異形|人外|鬼|ゾンビ|殺人鬼|サイコパス|ストーカー|異常者|隣人|子供|女|老婆|人形|日本人形|仮面|ピエロ|' +
+              '鮮血|血飛沫|肉|骨|内臓|死体|遺体|白骨|腐敗|切断|首|目玉|髪|長い髪|爪|牙|傷|痕|痣|火傷|ミイラ|' +
+              '都市伝説|噂|怪談|百物語|肝試し|心霊|スポット|写真|動画|配信|ノイズ|バグ|文字化け|スマホ|着信|非通知|メッセージ|チェーンメール|掲示板|儀式|降霊|コックリさん|ひとりかくれんぼ|' +
+              '殺害|殺意|恨み|憎悪|復讐|祟り|因縁|厄災|不吉|予言|警告|タブー|禁忌|封印|結界|お札|お守り|塩|神社|寺|墓|墓地|霊園|葬式|線香|仏壇'
+},
+           literary_action: {
+    name: 'アクション',
+    desc: '戦闘描写、アクションシーンを主体とした作品。',
+    targetLen: 30,
+    minDialog: 30,
+    weights: { vocab: 1.3, description: 1.5, dialogue: 1.3, sentiment: 1.2, ending: 1.4, viewpoint: 1.2, tempo: 1.6, redundancy: 1.3, connector: 1.2, keyword: 1.3 },
+    keywords: '戦い|攻撃|防御|剣|銃|爆発|疾走|跳躍|回避|一撃|必殺|倒す|敵|バトル|戦闘|' +
+              '殴|蹴|斬|刺|撃|射|投|飛|走|駆|受|避|豨|弾|防|殺|壊|砕|裂|穿|貫|断|捻|絞|伏|隠|構|狙|' +
+              '拳|足|脚|肘|膝|指|爪|牙|頭|首|喉|心臓|腹|背|腕|肩|脇|急所|死角|隙|正中線|動体視力|反射神経|' +
+              '刀|刃|槍|斧|槌|盾|鎧|兜|ナイフ|ダガー|クナイ|手裏剣|暗器|弓|矢|クロスボウ|弾丸|マガジン|トリガー|銃口|照準|スコープ|ライフル|マシンガン|ハンドガン|散弾|砲撃|爆弾|手榴弾|地雷|ミサイル|レーザー|兵器|' +
+              '連撃|乱舞|カウンター|相打ち|鍔迫り合い|フェイント|牽制|特攻|奇襲|強襲|迎撃|包囲|突破|撤退|追撃|乱戦|消耗戦|総力戦|決戦|一騎打ち|タイマン|' +
+              '衝撃|反動|轟音|爆音|金属音|火花|閃光|硝煙|砂煙|血煙|土煙|粉塵|残像|風圧|殺気|闘気|覇気|威圧|プレッシャー|アドレナリン|興奮|狂乱|覚醒|' +
+              '激痛|鈍痛|痺れ|出血|吐血|骨折|打撲|裂傷|瀕死|即死|満身創痍|限界|疲労|息切れ|過呼吸|冷や汗|脂汗|震え|硬直|気絶|意識|生存|死亡|' +
+              '勝負|勝利|敗北|決着|優勢|劣勢|逆転|油断|慢心|本気|全力|底力|奥義|秘技|スキル|能力|チート|無双|最強|最速|怪物|化け物|強者|弱者|獲物|狩り|戦場|修羅場'
+},
+           literary_comedy: {
+    name: 'コメディー',
+    desc: '読者を笑わせることを主題とした作品。',
+    targetLen: 35,
+    minDialog: 55,
+    weights: { vocab: 1.3, description: 1.2, dialogue: 1.7, sentiment: 1.3, ending: 1.5, viewpoint: 1.1, tempo: 1.6, redundancy: 1.2, connector: 1.2, keyword: 1.2 },
+    keywords: '笑|爆笑|ギャグ|ツッコミ|ボケ|ドタバタ|勘違い|ハプニング|おかしい|面白|バカ|アホ|ユーモア|' +
+              '吹き出|腹筋|崩壊|草|www|（笑）|苦笑|失笑|大爆笑|ニヤニヤ|ゲラ|抱腹絶倒|滑稽|茶番|コント|漫才|オチ|フリ|伏線|台無し|' +
+              'カオス|混沌|シュール|ナンセンス|不条理|意味不明|理解不能|奇行|変人|奇人|変態|紳士|ポンコツ|ドジ|うっかり|天然|残念|無能|天才|紙一重|脳筋|筋肉|マッスル|ゴリラ|厨二|黒歴史|痛い|寒い|滑る|' +
+              '叫び|絶叫|悲鳴|怒号|罵倒|説教|正座|土下座|平謝り|逆ギレ|無視|スルー|真顔|ドヤ顔|変顔|顔芸|白目|涙目|鼻血|滝汗|冷や汗|ガクブル|' +
+              '殴|蹴|叩|チョップ|ハリセン|スリッパ|爆発|自爆|暴走|乱入|破壊|粉砕|玉砕|激突|吹っ飛|空|星|' +
+              'メタ|パロディ|オマージュ|天丼|お約束|テンプレ|フラグ|回収|ご都合|作者|神|主人公|補正|チート|インフレ|' +
+              '貧乏|金欠|借金|社畜|ニート|引きこもり|リア充|爆発しろ|ボッチ|陰キャ|陽キャ|全裸|パンツ|モザイク|ピー音|規制|放送事故|異次元|宇宙'
+},
+           sf_vr: {
+    name: 'VRゲーム',
+    desc: 'VR技術を利用したゲームが主体となる作品。',
+    targetLen: 50,
+    minDialog: 40,
+    weights: { vocab: 1.4, description: 1.4, dialogue: 1.4, sentiment: 1.2, ending: 1.3, viewpoint: 1.2, tempo: 1.4, redundancy: 1.3, connector: 1.2, keyword: 1.5 },
+    keywords: 'VR|AR|MR|ゲーム|仮想|現実|ログイン|ログアウト|スキル|レベル|クエスト|ダンジョン|プレイヤー|NPC|AI|人工知能|ステータス|' +
+              'フルダイブ|ヘッドギア|カプセル|脳波|接続|リンク|ダイブ|サーバー|ラグ|回線|バグ|グリッチ|チート|不正|BAN|垢バン|運営|GM|開発|アプデ|メンテ|パッチ|ナーフ|強化|調整|' +
+              'アバター|キャラメイク|キャラクリ|種族|人間|エルフ|獣人|職業|ジョブ|クラス|生産|鍛冶|錬金|料理|裁縫|釣り|採集|採掘|農業|テイム|従魔|ペット|' +
+              'HP|MP|STR|VIT|INT|AGI|DEX|LUK|攻撃力|防御力|敏捷|幸運|熟練度|経験値|EXP|SP|カンスト|極振り|ビルド|アーツ|魔法|テクニック|パッシブ|アクティブ|クールタイム|リキャスト|バフ|デバフ|' +
+              'メニュー|ウィンドウ|インベントリ|ストレージ|アイテム|ボックス|装備|武器|防具|アクセサリー|ポーション|課金|ガチャ|ショップ|通貨|ゴールド|G|円|リアルマネー|RMT|' +
+              'レア|コモン|アンコモン|レジェンド|ユニーク|エピック|神話|アーティファクト|隠し|裏|限定|称号|実績|トロフィー|ファースト|クリア|独占|発見|' +
+              'パーティ|ソロ|野良|固定|ギルド|クラン|チーム|リーダー|メンバー|フレンド|チャット|ボイチャ|VC|メッセージ|メール|申請|ブロック|' +
+              '攻略|検証|ガチ勢|エンジョイ勢|廃人|初心者|新規|古参|地雷|姫|囲い|ランカー|トップ|有名|プロ|' +
+              'フィールド|エリア|マップ|街|拠点|セーフティ|リスポーン|蘇生|デスペナ|死に戻り|' +
+              'ボス|レイド|モンスター|モブ|ドロップ|報酬|宝箱|イベント|ワールド|シナリオ|ストーリー|PvP|PK|Pk|キル|決闘|闘技場|大会|GvG|戦争|攻城戦|' +
+              '掲示板|スレ|レス|安価|Wiki|サイト|動画|配信|実況|生放送|ストリーマー|視聴者|リスナー|同接|コメント|スパチャ|炎上|祭り|晒し|特定|ネカマ|ロールプレイ'
+},
+           sf_space: {
+    name: '宇宙',
+    desc: '宇宙を舞台とした作品。',
+    targetLen: 60,
+    minDialog: 30,
+    weights: { vocab: 1.6, description: 1.6, dialogue: 1.2, sentiment: 1.1, ending: 1.2, viewpoint: 1.3, tempo: 1.3, redundancy: 1.4, connector: 1.3, keyword: 1.4 },
+    keywords: '宇宙|星|惑星|銀河|艦|船|宇宙船|宇宙人|エイリアン|コロニー|ステーション|軌道|航行|' +
+              '戦艦|巡洋艦|駆逐艦|空母|母艦|輸送艦|戦闘機|機動兵器|ロボット|パワードスーツ|ドック|ポート|' +
+              '艦長|提督|司令|クルー|乗員|パイロット|操舵|機関|通信|オペレーター|ドロイド|アンドロイド|サイボーグ|AI|人工知能|' +
+              'ワープ|跳躍|亜空間|ゲート|超光速|光速|亜光速|エンジン|スラスター|バーニア|推進|燃料|エネルギー|出力|炉|リアクター|ジェネレーター|重力|反重力|人工重力|無重力|G|慣性|真空|酸素|気密|宇宙服|ヘルメット|バイザー|エアロック|ハッチ|ブリッジ|艦橋|' +
+              'レーザー|ビーム|ブラスター|レールガン|粒子砲|主砲|副砲|機銃|ミサイル|魚雷|弾幕|斉射|砲火|シールド|バリア|フィールド|展開|装甲|船体|隔壁|迎撃|回避|ロックオン|レーダー|センサー|反応|照準|捕捉|撃墜|撃沈|轟沈|大破|爆散|デブリ|残骸|' +
+              '帝国|連邦|共和国|連合|同盟|軍|艦隊|戦隊|分艦隊|編隊|僚機|陣形|包囲|突撃|離脱|エース|英雄|反乱|レジスタンス|テロ|海賊|傭兵|交易|' +
+              '太陽|月|地球|火星|木星|土星|衛星|彗星|流星|隕石|アステロイド|小惑星|ブラックホール|星雲|地平線|未開|開拓|テラフォーミング|環境|汚染|資源|採掘|第一次|第二次|大戦'
+},
+          sf_science: {
+    name: '空想科学',
+    desc: '実在、非実在を問わず、何らかの技術・理論の要素を含む作品。',
+    targetLen: 65,
+    minDialog: 25,
+    weights: { vocab: 1.7, description: 1.6, dialogue: 1.1, sentiment: 1.0, ending: 1.2, viewpoint: 1.4, tempo: 1.2, redundancy: 1.5, connector: 1.5, keyword: 1.4 },
+    keywords: '科学|技術|理論|実験|研究|開発|博士|教授|未来|近未来|機械|ロボット|アンドロイド|AI|人工知能|' +
+              'データ|解析|分析|数値|計算|プログラム|コード|アルゴリズム|システム|ネットワーク|サーバー|ハッキング|アクセス|認証|セキュリティ|暗号|電子|電脳|サイバー|デジタル|仮想|拡張|インターフェース|デバイス|端末|' +
+              '物理|法則|エネルギー|原子|分子|粒子|量子|次元|重力|磁場|相対性|光速|時空|時間|タイムマシン|タイムトラベル|パラレルワールド|世界線|分岐|ループ|パラドックス|矛盾|因果|' +
+              '生物|生命|遺伝子|DNA|ゲノム|クローン|培養|進化|退化|突然変異|ウイルス|細菌|感染|パンデミック|ワクチン|ナノマシン|ナノテク|サイボーグ|義体|生体|脳|意識|記憶|人格|転送|' +
+              '文明|社会|都市|管理|監視|統治|政府|企業|ドローン|自動|自律|暴走|制御|エラー|故障|修理|廃棄|リサイクル|シンギュラリティ|技術的特異点|ディストピア|ユートピア|終末|崩壊|' +
+              '仮説|証明|論理|矛盾|未知|既知|可能性|確率|観測|事象|存在|認識|倫理|哲学|神|創造|人間|人類|新人類'
+},
+           sf_panic: {
+    name: 'パニック',
+    desc: '天災・汚染・大事故・侵略等の危機的状況下を舞台とした作品。',
+    targetLen: 45,
+    minDialog: 35,
+    weights: { vocab: 1.4, description: 1.6, dialogue: 1.4, sentiment: 1.4, ending: 1.4, viewpoint: 1.3, tempo: 1.5, redundancy: 1.2, connector: 1.3, keyword: 1.3 },
+    keywords: '災害|危機|パニック|崩壊|破壊|逃走|避難|生存|死|恐怖|混乱|絶望|希望|侵略|汚染|' +
+              'パンデミック|アウトブレイク|ウイルス|感染|発症|潜伏|隔離|封鎖|ロックダウン|ワクチン|特効薬|抗体|免疫|マスク|防護服|' +
+              'ゾンビ|感染者|リビングデッド|噛まれる|転化|増殖|暴徒|怪獣|巨大生物|エイリアン|UFO|侵略者|隕石|衝突|噴火|地震|津波|洪水|異常気象|氷河期|' +
+              '停電|断水|ガス|インフラ|ブラックアウト|通信|遮断|圏外|ネット|SNS|デマ|噂|報道|ニュース|緊急|速報|警報|サイレン|放送|Jアラート|' +
+              '暴動|略奪|強盗|放火|殺人|治安|悪化|無法|ヒャッハー|警察|自衛隊|軍|政府|放棄|機能不全|戒厳令|' +
+              '脱出|移動|車|渋滞|事故|炎上|爆発|火災|黒煙|瓦礫|廃墟|ゴーストタウン|都市|ビル|地下鉄|トンネル|' +
+              'サバイバル|籠城|バリケード|備蓄|食料|水|缶詰|保存食|武器|バール|ナイフ|銃|弾薬|ライト|ラジオ|バッテリー|発電機|' +
+              'スーパー|コンビニ|ホームセンター|薬局|病院|学校|体育館|避難所|キャンプ|シェルター|安全地帯|セーフハウス|' +
+              '家族|恋人|友人|他人|集団|グループ|リーダー|独裁|仲間|協力|内輪揉め|疑惑|疑心暗鬼|裏切り|見殺し|犠牲|囮|人柱|' +
+              '叫び|悲鳴|泣き声|怒号|狂気|正気|錯乱|ヒステリー|疲労|空腹|飢餓|渇き|怪我|出血|死体|遺体|山積み|悪臭|腐臭|' +
+              'タイムリミット|カウントダウン|救助|救援|ヘリ|船|ノアの方舟|選別|優先|見捨てる|生き残る|生存者'
+},
+           other_fairy: {
+    name: '童話',
+    desc: '幼年、児童に向けた内容の読み物。',
+    targetLen: 35,
+    minDialog: 50,
+    weights: { vocab: 1.2, description: 1.4, dialogue: 1.6, sentiment: 1.3, ending: 1.3, viewpoint: 1.1, tempo: 1.3, redundancy: 1.1, connector: 1.1, keyword: 1.2 },
+    keywords: '優しい|楽しい|仲間|冒険|魔法|王子|姫|動物|森|お城|ハッピーエンド|教訓|' +
+              'むかしむかし|あるところに|おじいさん|おばあさん|男の子|女の子|子供|赤ちゃん|お父さん|お母さん|王様|女王様|神様|天使|' +
+              'うさぎ|くま|ねこ|いぬ|きつね|たぬき|おおかみ|ライオン|ねずみ|とり|小鳥|魚|虫|蝶々|' +
+              '妖精|小人|巨人|魔女|魔法使い|おばけ|怪物|ドラゴン|竜|人魚|鬼|' +
+              'わくわく|ドキドキ|キラキラ|ふわふわ|ニコニコ|ピカピカ|どんどん|てくてく|ぴょんぴょん|ぐすん|しくしく|えーん|' +
+              '友達|仲良し|喧嘩|仲直り|約束|嘘|本当|正直|勇気|知恵|力持ち|意地悪|親切|恩返し|' +
+              'お菓子|ケーキ|キャンディ|パン|リンゴ|ごちそう|宝物|金貨|地図|手紙|' +
+              'お家|小屋|洞窟|塔|学校|公園|空|星|お月様|太陽|雲|虹|花|木|川|海|山|' +
+              '夢|願い|お祈り|誕生日|クリスマス|プレゼント|歌|ダンス|お祭り|' +
+              '迷子|お使い|旅|出発|帰り道|ただいま|おかえり|ごめんなさい|ありがとう|' +
+              'めでたしめでたし|幸せ|笑顔|平和|不思議|秘密|物語|お話'
+},
+            other_poem: {
+    name: '詩',
+    desc: '言葉に美と響きを乗せて想いを表現している作品。',
+    targetLen: 25,
+    minDialog: 10,
+    weights: { vocab: 1.8, description: 1.6, dialogue: 0.8, sentiment: 1.6, ending: 1.5, viewpoint: 1.2, tempo: 1.4, redundancy: 1.4, connector: 1.0, keyword: 1.0 },
+    keywords: '心|魂|風|光|影|夢|空|海|花|月|星|愛|美|響き|想い|' +
+              '雨|雪|雲|霧|霞|雷|虹|太陽|陽射し|木漏れ日|夕暮れ|黄昏|夜明け|朝|昼|夕|夜|深夜|' +
+              '春|夏|秋|冬|季節|桜|向日葵|紅葉|枯葉|樹木|森|林|川|水|雫|波|潮騒|' +
+              '色|白|黒|青|赤|碧|蒼|朱|金|銀|透明|色彩|匂い|香り|音|声|歌|旋律|リズム|メロディ|' +
+              '永遠|刹那|瞬間|時間|記憶|過去|未来|現在|運命|奇跡|幻|幻想|真実|嘘|秘密|' +
+              '悲しみ|喜び|怒り|嘆き|祈り|願い|希望|絶望|孤独|静寂|沈黙|安らぎ|癒し|痛み|傷|涙|笑顔|' +
+              '言葉|言の葉|詩|歌|手紙|物語|世界|宇宙|彼方|翼|飛翔|自由|束縛|生|死|命|鼓動'
+},
+            other_essay: {
+    name: 'エッセイ',
+    desc: '個人的観点により思想や物事を論じている作品。',
+    targetLen: 60,
+    minDialog: 15,
+    weights: { vocab: 1.6, description: 1.4, dialogue: 1.0, sentiment: 1.2, ending: 1.3, viewpoint: 1.3, tempo: 1.2, redundancy: 1.5, connector: 1.5, keyword: 1.0 },
+    keywords: '思う|考える|感じる|私|経験|日常|生活|社会|人生|視点|意見|観察|' +
+              '考察|分析|結論|理由|原因|結果|疑問|仮説|検証|納得|理解|把握|認識|意識|無意識|' +
+              '主観|客観|個人的|一般的|常識|偏見|先入観|価値観|正義|悪|是非|賛否|批判|肯定|否定|共感|反感|' +
+              '執筆|創作|小説|物語|文章|表現|読者|作者|ユーザー|PV|ポイント|評価|感想|レビュー|ランキング|書籍化|コンテスト|スランプ|プロット|ネタ|更新|' +
+              '実話|ノンフィクション|体験談|失敗談|成功談|思い出|記憶|過去|現在|未来|きっかけ|動機|教訓|' +
+              'ニュース|時事|話題|流行|トレンド|問題|解決|提案|主張|言いたい|伝えたい|' +
+              '趣味|仕事|勉強|学校|会社|政治|経済|文化|宗教|哲学|心理|人間関係|ストレス|悩み|相談|' +
+              'ブログ|日記|雑記|備忘録|メモ|独り言|語り|紹介|解説|方法|ノウハウ|コツ|アドバイス'
+},
+            other_replay: {
+    name: 'リプレイ',
+    desc: 'TRPGのプレイ結果を文章にて記録したもの。',
+    targetLen: 40,
+    minDialog: 60,
+    weights: { vocab: 1.2, description: 1.3, dialogue: 1.7, sentiment: 1.2, ending: 1.2, viewpoint: 1.1, tempo: 1.4, redundancy: 1.1, connector: 1.2, keyword: 1.3 },
+    keywords: 'ダイス|判定|成功|失敗|スキル|キャラクター|PC|GM|セッション|シナリオ|ロール|' +
+              'サイコロ|1D100|2D6|出目|クリティカル|ファンブル|決定的成功|致命的失敗|振り直し|技能|チェック|抵抗|対抗|難易度|ボーナス|ペナルティ|期待値|' +
+              'KP|キーパー|DM|PL|プレイヤー|ハンドアウト|HO|秘匿|探索者|冒険者|NPC|黒幕|ラスボス|立ち絵|' +
+              'SAN|正気度|発狂|狂気|不定|HP|MP|STR|DEX|INT|POW|APP|SIZ|EDU|ステータス|能力値|キャラシ|CS|職業|特徴|' +
+              '目星|聞き耳|図書館|心理学|説得|言いくるめ|オカルト|回避|キック|こぶし|マーシャルアーツ|応急手当|医学|' +
+              '戦闘|イニシアティブ|ラウンド|ターン|攻撃|ダメージ|装甲|武器|アイテム|呪文|魔法|アーティファクト|魔導書|神話生物|' +
+              '卓|オンセ|テキセ|ボイセ|ログ|動画|仮想卓|茶番|休憩|相談|提案|メタ|描写|宣言|情報|共有|開示|' +
+              '導入|探索|クライマックス|エンディング|ロスト|生還|全滅|トゥルー|バッド|ハッピー|分岐|' +
+              '笑|爆笑|困惑|絶望|悲鳴|合掌|祈り|リアル|中の人'
+},
+       other_misc: {
+    name: 'その他',
+    desc: '上記ジャンルに該当しない作品。',
+    targetLen: 50,
+    minDialog: 35,
+    weights: { vocab: 1.3, description: 1.3, dialogue: 1.3, sentiment: 1.2, ending: 1.2, viewpoint: 1.2, tempo: 1.2, redundancy: 1.2, connector: 1.2, keyword: 1.0 },
+    keywords: '物語|小説|短編|掌編|ショートショート|オムニバス|連作|日常|生活|雑多|未分類|ノンジャンル|' +
+              '趣味|料理|グルメ|食事|酒|レシピ|旅行|散歩|写真|音楽|楽器|バンド|美術|芸術|絵画|映画|本|読書|' +
+              'ペット|猫|犬|動物|植物|花|自然|園芸|農業|' +
+              '実験|前衛|シュール|不思議|謎|自由|カオス|夢|幻想|' +
+              '仕事|ビジネス|学校|学生|大人|子供|現代|日本|世界|海外|文化|風習|' +
+              '友情|家族|青春|人生|' +
+              '創作|フィクション|クロスオーバー|コラボ|IF|パラレル'
+}
+        };
 
-            watch(isDarkMode, (val) => {
-                document.documentElement.setAttribute('data-theme', val ? 'night' : 'winter');
-                if(stats.value) {
-                    nextTick(() => renderCharts(stats.value));
-                }
-            }, { immediate: true });
+        const groupedGenres = {
+            '恋愛': [
+                { id: 'love_isekai', name: '異世界' },
+                { id: 'love_real', name: '現実世界' }
+            ],
+            'ファンタジー': [
+                { id: 'fantasy_high', name: 'ハイファンタジー' },
+                { id: 'fantasy_low', name: 'ローファンタジー' }
+            ],
+            '文芸': [
+                { id: 'literary_pure', name: '純文学' },
+                { id: 'literary_human', name: 'ヒューマンドラマ' },
+                { id: 'literary_history', name: '歴史' },
+                { id: 'literary_mystery', name: '推理' },
+                { id: 'literary_horror', name: 'ホラー' },
+                { id: 'literary_action', name: 'アクション' },
+                { id: 'literary_comedy', name: 'コメディー' }
+            ],
+            'SF': [
+                { id: 'sf_vr', name: 'VRゲーム' },
+                { id: 'sf_space', name: '宇宙' },
+                { id: 'sf_science', name: '空想科学' },
+                { id: 'sf_panic', name: 'パニック' }
+            ],
+            'その他': [
+                { id: 'other_fairy', name: '童話' },
+                { id: 'other_poem', name: '詩' },
+                { id: 'other_essay', name: 'エッセイ' },
+                { id: 'other_replay', name: 'リプレイ' },
+                { id: 'other_misc', name: 'その他' }
+            ]
+        };
 
-            const groupedGenres = computed(() => {
-                const groups = {};
-                for (const key in GENRE_PARAMS) {
-                    const g = GENRE_PARAMS[key];
-                    if (!groups[g.group]) groups[g.group] = [];
-                    groups[g.group].push({ id: key, ...g });
-                }
-                return groups;
-            });
+        const currentScoringProfile = computed(() => scoringProfiles[selectedGenre.value]);
 
-            const currentScoringProfile = computed(() => GENRE_PARAMS[selectedGenre.value]);
-            
-            const showToast = (msg, type = 'alert-info') => {
-                toastMessage.value = msg;
-                toastType.value = type;
-                setTimeout(() => toastMessage.value = '', 3000);
-            };
-            const toastIcon = computed(() => toastType.value.includes('success') ? 'ph-check-circle' : 'ph-info');
-            const getScoreColor = (score) => score >= 80 ? 'text-success' : score >= 60 ? 'text-info' : score >= 40 ? 'text-warning' : 'text-error';
-            const getScoreBg = (score) => score >= 80 ? 'bg-success' : score >= 60 ? 'bg-info' : score >= 40 ? 'bg-warning' : 'bg-error';
+        const rankColorClass = computed(() => {
+            if (!stats.value) return '';
+            const r = stats.value.rank;
+            if (r === 'SS' || r === 'S') return 'bg-gradient-to-b from-yellow-400 to-orange-500';
+            if (r === 'A') return 'bg-gradient-to-b from-green-400 to-emerald-600';
+            if (r === 'B') return 'bg-gradient-to-b from-blue-400 to-blue-600';
+            if (r === 'C') return 'bg-gradient-to-b from-gray-400 to-gray-600';
+            return 'bg-gradient-to-b from-red-400 to-red-600';
+        });
 
-            const rankColorClass = computed(() => {
-                if(!stats.value) return 'bg-gray-200';
-                const r = stats.value.rank;
-                return r.includes('S') ? 'bg-yellow-400': r==='A'?'bg-pink-400': r==='B'?'bg-blue-400': 'bg-gray-400';
-            });
-            const rankGradient = computed(() => {
-                if(!stats.value) return '';
-                const r = stats.value.rank;
-                return r==='SS'?'from-yellow-300 via-orange-400 to-red-500': r==='S'?'from-yellow-400 to-orange-500': r==='A'?'from-pink-400 to-rose-500': r==='B'?'from-cyan-400 to-blue-500': 'from-gray-400 to-slate-500';
-            });
+        const rankGradient = computed(() => {
+            if (!stats.value) return '';
+            const r = stats.value.rank;
+            if (r === 'SS' || r === 'S') return 'from-yellow-400 to-orange-500';
+            if (r === 'A') return 'from-green-400 to-emerald-600';
+            if (r === 'B') return 'from-blue-400 to-blue-600';
+            if (r === 'C') return 'from-gray-400 to-gray-600';
+            return 'from-red-400 to-red-600';
+        });
 
-            const shareResult = () => {
-                if (!stats.value) return;
-                const score = stats.value.totalScore.toFixed(1);
-                const rank = stats.value.rank;
-                const genre = currentScoringProfile.value.name;
-                
-                const text = `【Narou Analyzer Pro V5.0】\nジャンル：${genre}\n評価：${rank}ランク (${score}/100)\n超高精度分析で文章力向上！\nCreated by ペンギンの搾り汁\n#NarouAnalyzer`;
-                const url = window.location.href; 
-                
-                const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-                window.open(shareUrl, '_blank');
-            };
+        const showToast = (msg, type = 'alert-info', icon = 'ph-fill ph-info') => {
+            toastMessage.value = msg;
+            toastType.value = type;
+            toastIcon.value = icon;
+            setTimeout(() => { toastMessage.value = ''; }, 3000);
+        };
 
-            // --- ENHANCED ANALYSIS LOGIC ---
-            const analyzeText = async () => {
-                if (inputText.value.length < 10) return;
-                isProcessing.value = true;
-                await new Promise(r => setTimeout(r, 800));
+        const shareResult = () => {
+            if (!stats.value) return;
+            const text = `Narou Analyzer Pro V5.0 Ultra\nジャンル: ${currentScoringProfile.value.name}\nランク: ${stats.value.rank} (${stats.value.totalScore.toFixed(1)}点)\n#なろうアナライザー`;
+            if (navigator.share) {
+                navigator.share({ title: 'なろうアナライザー結果', text });
+            } else {
+                navigator.clipboard.writeText(text);
+                showToast('結果をクリップボードにコピーしました！', 'alert-success', 'ph-fill ph-check-circle');
+            }
+        };
 
-                try {
-                    const text = inputText.value;
-                    const genreKey = selectedGenre.value;
-                    const params = GENRE_PARAMS[genreKey];
+        watch(isDarkMode, (val) => {
+            document.documentElement.setAttribute('data-theme', val ? 'night' : 'winter');
+            if (stats.value) {
+                nextTick(() => renderCharts(stats.value));
+            }
+        });
 
-                    const lines = text.split('\n');
-                    const cleanSentences = (text.match(/[^。！？\n]+[。！？]?/g) || []).map(s => s.trim()).filter(s => s.length > 1);
+        const analyzeText = () => {
+            const text = inputText.value.trim();
+            if (text.length < 100) {
+                showToast('100文字以上のテキストを入力してください', 'alert-warning', 'ph-fill ph-warning');
+                return;
+            }
 
-                    // ==================== 1. リズムスコア (大幅強化) ====================
-                    
-                    // 1-1. 文末パターン詳細分析
-                    let endingTypes = { past: 0, present: 0, noun: 0, dialog: 0, other: 0 };
-                    let endings = [];
-                    
-                    cleanSentences.forEach(s => {
-                        if (s.endsWith('」') || s.includes('「')) {
-                            endingTypes.dialog++;
-                            endings.push('DIALOG');
-                        } else if (/[た|だ|いた|した|った|んだ][。！？]?$/.test(s)) {
-                            endingTypes.past++;
-                            endings.push('PAST');
-                        } else if (/[る|いる|ある|なる|できる|される][。！？]?$/.test(s)) {
-                            endingTypes.present++;
-                            endings.push('PRES');
-                        } else if (/[^\s][。！？]?$/.test(s) && !s.endsWith('た') && !s.endsWith('る')) {
-                            endingTypes.noun++;
-                            endings.push('NOUN');
-                        } else {
-                            endingTypes.other++;
-                            endings.push('OTHER');
-                        }
-                    });
-
-                    // 1-2. 文末重複検出 (改良版)
-                    let badSequenceCount = 0;
-                    let combo = 1;
-                    for (let i = 1; i < endings.length; i++) {
-                        if (endings[i] === endings[i-1] && endings[i] !== 'OTHER' && endings[i] !== 'DIALOG') { 
-                            combo++; 
-                            if (combo === 3) badSequenceCount++;
-                            if (combo > 5) badSequenceCount++; 
-                        } else {
-                            combo = 1;
-                        }
-                    }
-
-                    const sentenceCount = Math.max(1, cleanSentences.length);
-                    const repetitionRate = (badSequenceCount / sentenceCount) * 100;
-                    
-                    let repetitionScore = 100;
-                    const tolerance = 2.5;
-                    if (repetitionRate > tolerance) {
-                        repetitionScore = Math.max(0, 100 - ((repetitionRate - tolerance) * 6));
-                    }
-                    
-                    // 1-3. リズム変化度計算
-                    const endingPatternScore = 100 - (endingTypes.other / sentenceCount) * 100;
-                    let rhythmVariation = 'poor';
-                    const uniquePatternRatio = new Set(endings.filter(e => e !== 'OTHER')).size / endings.length;
-                    if (uniquePatternRatio > 0.5) rhythmVariation = 'excellent';
-                    else if (uniquePatternRatio > 0.35) rhythmVariation = 'good';
-                    else if (uniquePatternRatio > 0.2) rhythmVariation = 'fair';
-
-                    // 1-4. 段落構成分析
-                    let wallCount = 0, currentBlockLines = 0, currentBlockChars = 0;
-                    lines.forEach(l => {
-                        const t = l.trim();
-                        if (t === '') { 
-                            currentBlockLines = 0; 
-                            currentBlockChars = 0; 
-                        } else {
-                            currentBlockLines++;
-                            currentBlockChars += t.length;
-                            const limitLines = (genreKey === 'pure_lit' || genreKey === 'essay') ? 12 : 6;
-                            const limitChars = (genreKey === 'pure_lit' || genreKey === 'essay') ? 600 : 300;
-                            if (currentBlockLines > limitLines || currentBlockChars > limitChars) wallCount++;
-                        }
-                    });
-
-                    // 1-5. 文長統計
-                    const lengths = cleanSentences.map(s => s.length);
-                    const avgLen = lengths.reduce((a, b) => a + b, 0) / (lengths.length || 1);
-                    const variance = lengths.reduce((a, b) => a + Math.pow(b - avgLen, 2), 0) / (lengths.length || 1);
-                    const stdDev = Math.sqrt(variance);
-
-                    const kanjiCount = (text.match(/[\u4E00-\u9FFF]/g) || []).length;
-                    const kanjiRatio = (kanjiCount / text.replace(/\s/g,'').length) * 100;
-
-                    // 1-6. リズムスコア統合
-                    let rhythmScore = 100;
-                    
-                    if (genreKey === 'poetry') {
-                        // 詩専用の評価基準
-                        // 行の長さの統一性（詩は短い行が多いべき）
-                        const lineVariance = lines.map(l => l.trim().length).filter(l => l > 0);
-                        const avgLineLen = lineVariance.reduce((a,b) => a+b, 0) / (lineVariance.length || 1);
-                        const lineStdDev = Math.sqrt(lineVariance.reduce((a,b) => a + Math.pow(b - avgLineLen, 2), 0) / (lineVariance.length || 1));
-                        
-                        // 詩は短い行が好ましい
-                        if (avgLineLen > 40) rhythmScore -= (avgLineLen - 40) * 1.5;
-                        
-                        // 行長の変化が激しすぎるのは減点（自由詩でもある程度の統一感が必要）
-                        if (lineStdDev > 30) rhythmScore -= (lineStdDev - 30) * 0.5;
-                        
-                        // 空行が多すぎる（構成が薄い）
-                        const emptyLineRatio = lines.filter(l => l.trim() === '').length / lines.length;
-                        if (emptyLineRatio > 0.5) rhythmScore -= 20;
-                        
-                        // 文末の音韻的な統一性（簡易チェック）
-                        const poemEndings = cleanSentences.map(s => s.slice(-2)).filter(e => e.length === 2);
-                        const uniqueEndings = new Set(poemEndings);
-                        const endingVariety = uniqueEndings.size / (poemEndings.length || 1);
-                        // 詩は文末が多様すぎても統一感がなくなる
-                        if (endingVariety > 0.8) rhythmScore -= 15;
-                        
-                    } else {
-                        // 通常ジャンルの評価
-                        // 文長適合性
-                        const lenDiff = Math.abs(avgLen - params.targetLen);
-                        if (lenDiff > 20) rhythmScore -= (lenDiff - 15) * 1.5;
-                        
-                        // 漢字率
-                        if (genreKey === 'fairytale' && kanjiRatio > 20) rhythmScore -= (kanjiRatio - 20) * 2;
-                        else if (kanjiRatio > 55) rhythmScore -= (kanjiRatio - 55) * 1.5;
-                        else if (kanjiRatio < 10 && genreKey !== 'fairytale') rhythmScore -= (10 - kanjiRatio) * 2;
-                        
-                        // 文末パターン
-                        rhythmScore = (rhythmScore * 0.5) + (repetitionScore * 0.3) + (endingPatternScore * 0.2);
-                        
-                        // 段落構成
-                        if (wallCount > 0 && genreKey !== 'essay') {
-                            rhythmScore -= Math.min(15, wallCount * 3);
-                        }
-                    }
-                    
-                    rhythmScore = Math.max(0, Math.min(100, rhythmScore));
-
-                    // ==================== 2. 没入感スコア (大幅強化) ====================
-                    
-                    // 2-1. 会話比率
-                    const dialogMatches = text.match(/「[^」]+」/g) || [];
-                    const dialogLen = dialogMatches.join('').length;
-                    const dialogRatio = (dialogLen / text.length) * 100;
-                    
-                    let dialogScore = 100;
-                    if (genreKey !== 'replay') {
-                        const dialogDiff = Math.abs(dialogRatio - params.minDialog);
-                        dialogScore = Math.max(0, 100 - (dialogDiff * 1.5));
-                    } else {
-                        dialogScore = Math.min(100, dialogRatio * 1.2);
-                    }
-                    
-                    // 2-2. 五感表現密度
-                    let senseCounts = { sight: 0, sound: 0, touch: 0 };
-                    Object.keys(DICT.senses).forEach(type => {
-                        DICT.senses[type].forEach(w => { 
-                            const count = (text.match(new RegExp(w, 'g')) || []).length;
-                            senseCounts[type] += count; 
-                        });
-                    });
-                    
-                    const totalSenses = Object.values(senseCounts).reduce((a, b) => a + b, 0);
-                    const senseDensity = (totalSenses / (text.length / 1000)) * 20;
-                    const senseScore = Math.min(100, senseDensity);
-                    
-                    // 2-3. 視点一貫性チェック (新機能)
-                    const firstPersonCount = (text.match(/私|僕|俺|自分|わたし/g) || []).length;
-                    const thirdPersonCount = (text.match(/彼|彼女|その人|あの人/g) || []).length;
-                    const totalPersonRefs = firstPersonCount + thirdPersonCount;
-                    let viewpointConsistency = 'consistent';
-                    let viewpointScore = 100;
-                    
-                    if (totalPersonRefs > 5) {
-                        const mixRatio = Math.min(firstPersonCount, thirdPersonCount) / totalPersonRefs;
-                        if (mixRatio > 0.3) {
-                            viewpointConsistency = 'mixed';
-                            viewpointScore = 70;
-                        } else if (mixRatio > 0.15) {
-                            viewpointConsistency = 'slightly_mixed';
-                            viewpointScore = 85;
-                        }
-                    }
-                    
-                    // 2-4. 描写密度 (新機能)
-                    let adjCount = 0, advCount = 0;
-                    DICT.adjectives.forEach(w => adjCount += (text.match(new RegExp(w, 'g')) || []).length);
-                    DICT.adverbs.forEach(w => advCount += (text.match(new RegExp(w, 'g')) || []).length);
-                    
-                    const descriptiveDensity = ((adjCount + advCount) / sentenceCount);
-                    let descriptiveScore = Math.min(100, descriptiveDensity * 20);
-                    let descriptiveDensityLabel = 'normal';
-                    if (descriptiveDensity > 3) descriptiveDensityLabel = 'rich';
-                    else if (descriptiveDensity > 1.5) descriptiveDensityLabel = 'adequate';
-                    else if (descriptiveDensity < 0.5) descriptiveDensityLabel = 'sparse';
-                    
-                    // 2-5. 心理描写の深さ (新機能)
-                    const psychWords = ['思う','感じる','考える','悩む','迷う','願う','望む','恐れる','不安','期待','心','気持ち','感情'];
-                    let psychCount = 0;
-                    psychWords.forEach(w => psychCount += (text.match(new RegExp(w, 'g')) || []).length);
-                    
-                    const psychologicalDepth = (psychCount / sentenceCount);
-                    let psychScore = Math.min(100, psychologicalDepth * 50);
-                    let psychDepthLabel = 'normal';
-                    if (psychologicalDepth > 0.8) psychDepthLabel = 'deep';
-                    else if (psychologicalDepth > 0.4) psychDepthLabel = 'moderate';
-                    else if (psychologicalDepth < 0.2) psychDepthLabel = 'shallow';
-                    
-                    // 2-6. 没入感スコア統合
-                    let immScore = 0;
-                    
-                    if (genreKey === 'poetry') {
-                        // 詩は会話や五感ではなく、比喩表現や抽象語彙で評価
-                        const poeticWords = ['風','空','心','愛','夢','光','影','花','時','魂','星','月','海','涙','声','静寂','闇','想','記憶','永遠'];
-                        let poeticCount = 0;
-                        poeticWords.forEach(w => poeticCount += (text.match(new RegExp(w, 'g')) || []).length);
-                        
-                        const poeticDensity = (poeticCount / (text.length / 100));
-                        immScore = Math.min(100, poeticDensity * 15);
-                        
-                        // 詩は短いので、ある程度の長さがないと薄い
-                        if (text.length < 50) immScore *= 0.5;
-                        if (text.length > 100) immScore = Math.min(100, immScore * 1.2);
-                        
-                    } else {
-                        // 通常ジャンルの評価
-                        immScore = (dialogScore * 0.35) + (senseScore * 0.25) + (viewpointScore * 0.2) + (descriptiveScore * 0.1) + (psychScore * 0.1);
-                    }
-                    
-                    immScore = Math.max(0, Math.min(100, immScore));
-
-                    // ==================== 3. 構成品質スコア (大幅強化) ====================
-                    
-                    // 3-1. 接続詞の適切性 (新機能)
-                    let conjunctionCount = 0;
-                    Object.values(DICT.conjunctions).flat().forEach(w => {
-                        conjunctionCount += (text.match(new RegExp(w, 'g')) || []).length;
-                    });
-                    
-                    const conjunctionRatio = conjunctionCount / sentenceCount;
-                    let conjunctionScore = 100;
-                    if (conjunctionRatio > 0.5) conjunctionScore = 70; // 多すぎ
-                    else if (conjunctionRatio > 0.3) conjunctionScore = 90;
-                    else if (conjunctionRatio < 0.05) conjunctionScore = 80; // 少なすぎ
-                    
-                    // 3-2. 冗長表現の検出 (新機能)
-                    let redundancyCount = 0;
-                    DICT.redundant.forEach(phrase => {
-                        redundancyCount += (text.match(new RegExp(phrase, 'g')) || []).length;
-                    });
-                    
-                    const redundancyRatio = redundancyCount / sentenceCount;
-                    let redundancyScore = Math.max(0, 100 - (redundancyRatio * 100));
-                    let redundancyLabel = 'minimal';
-                    if (redundancyRatio > 0.3) redundancyLabel = 'excessive';
-                    else if (redundancyRatio > 0.15) redundancyLabel = 'noticeable';
-                    
-                    // 3-3. 構成品質スコア統合
-                    let grammarScore = 0;
-                    
-                    if (genreKey === 'poetry') {
-                        // 詩は文法の厳密性を求めない（むしろ破格が許される）
-                        // 音数的なリズムを評価
-                        const avgLineLength = lines.filter(l => l.trim().length > 0).map(l => l.trim().length);
-                        const hasConsistentRhythm = avgLineLength.length > 0 && 
-                            avgLineLength.filter(l => Math.abs(l - avgLineLength[0]) < 5).length > avgLineLength.length * 0.6;
-                        
-                        grammarScore = hasConsistentRhythm ? 70 : 50;
-                        
-                        // 極端に短すぎる（手抜き）
-                        if (text.length < 30) grammarScore = 30;
-                        
-                    } else {
-                        // 通常ジャンルの評価
-                        grammarScore = (repetitionScore * 0.5) + (conjunctionScore * 0.25) + (redundancyScore * 0.25);
-                        if (wallCount > 0 && genreKey !== 'essay') {
-                            grammarScore -= Math.min(10, wallCount * 2);
-                        }
-                    }
-                    
-                    grammarScore = Math.max(0, Math.min(100, grammarScore));
-
-                    // ==================== 4. 物語強度スコア (大幅強化) ====================
-                    
-                    // 4-1. 感情曲線分析
-                    let sentimentPoints = [];
-                    const chunkSize = Math.max(100, Math.ceil(text.length / 40)); 
-                    for (let i = 0; i < text.length; i += chunkSize) {
-                        const chunk = text.slice(i, i + chunkSize);
-                        let score = 0;
-                        DICT.pos.forEach(w => { 
-                            const count = (chunk.match(new RegExp(w, 'g')) || []).length;
-                            score += count; 
-                        });
-                        DICT.neg.forEach(w => { 
-                            const count = (chunk.match(new RegExp(w, 'g')) || []).length;
-                            score -= count; 
-                        });
-                        score = Math.max(-10, Math.min(10, score));
-                        sentimentPoints.push(score);
-                    }
-                    
-                    const smoothedPoints = sentimentPoints.map((val, i, arr) => {
-                        const prev = arr[i-1] || val;
-                        const next = arr[i+1] || val;
-                        return (val * 0.5 + prev * 0.25 + next * 0.25);
-                    });
-                    
-                    const emotionRange = Math.max(...smoothedPoints) - Math.min(...smoothedPoints);
-                    const emotionVariance = smoothedPoints.reduce((sum, val, i, arr) => {
-                        if (i === 0) return 0;
-                        return sum + Math.abs(val - arr[i-1]);
-                    }, 0) / smoothedPoints.length;
-                    
-                    // 4-2. クライマックス検出
-                    const maxPoint = Math.max(...smoothedPoints);
-                    const minPoint = Math.min(...smoothedPoints);
-                    const hasClimax = (maxPoint > 5 || minPoint < -5);
-                    
-                    // 4-3. ジャンルキーワード密度
-                    let foundKeywords = new Set();
-                    (params.keywords || []).forEach(w => { 
-                        if (text.includes(w)) foundKeywords.add(w); 
-                    });
-                    const keywordDensity = foundKeywords.size / (params.keywords?.length || 1);
-                    
-                    // 4-4. 物語強度スコア統合
-                    let storyScore = 0;
-                    
-                    if (genreKey === 'poetry') {
-                        // 詩はストーリーではなくイメージの豊かさで評価
-                        const imageWords = ['見','色','光','影','風','音','香','味','感','触'];
-                        let imageCount = 0;
-                        imageWords.forEach(w => imageCount += (text.match(new RegExp(w, 'g')) || []).length);
-                        
-                        const imageDensity = (imageCount / (text.length / 100));
-                        storyScore = Math.min(100, imageDensity * 20);
-                        
-                        // 感情の幅は評価するが、ストーリー的な起伏ではない
-                        storyScore += Math.min(20, emotionRange * 2);
-                        
-                        // 詩的キーワードの使用
-                        storyScore += Math.min(30, foundKeywords.size * 8);
-                        
-                    } else {
-                        // 通常ジャンルの評価
-                        storyScore = 50;
-                        storyScore += emotionRange * 3.5;
-                        storyScore += emotionVariance * 10;
-                        if (hasClimax) storyScore += 10;
-                        storyScore += Math.min(25, foundKeywords.size * 6);
-                        storyScore += keywordDensity * 20;
-                    }
-                    
-                    storyScore = Math.max(0, Math.min(100, storyScore));
-
-                    // ==================== 5. 総合スコア計算 ====================
-                    const w = params.weights;
-                    let total = ((rhythmScore * w.rhythm) + (immScore * w.immersion) + (grammarScore * w.grammar) + (storyScore * w.story)) / 100;
-                    
-                    // ボーナス（詩以外）
-                    if (genreKey !== 'poetry') {
-                        if (foundKeywords.size >= 4) total += 4;
-                        if (wallCount === 0) total += 2;
-                        if (viewpointConsistency === 'consistent') total += 2;
-                        if (redundancyLabel === 'minimal') total += 2;
-                        if (rhythmVariation === 'excellent') total += 3;
-                    } else {
-                        // 詩専用ボーナス
-                        if (foundKeywords.size >= 3) total += 5;
-                        // 適度な長さ（100-300文字くらいが詩として適切）
-                        if (text.length >= 100 && text.length <= 300) total += 5;
-                        // 行数が適度（5-20行程度）
-                        const validLines = lines.filter(l => l.trim().length > 0).length;
-                        if (validLines >= 5 && validLines <= 20) total += 3;
-                    }
-                    
-                    total = Math.max(0, Math.min(100, total));
-
-                    const rank = total >= 92 ? 'SS' : total >= 82 ? 'S' : total >= 72 ? 'A' : total >= 60 ? 'B' : total >= 45 ? 'C' : 'D';
-
-                    const tags = [];
-                    if (rhythmScore > 85) tags.push("リズム感◎");
-                    if (immScore > 85) tags.push("没入感◎");
-                    if (grammarScore > 85) tags.push("構成◎");
-                    if (foundKeywords.size > 3) tags.push("ジャンル要素豊富");
-                    if (viewpointConsistency === 'consistent') tags.push("視点安定");
-                    if (rhythmVariation === 'excellent') tags.push("変化に富む");
-
-                    stats.value = {
-                        rank, totalScore: total, tags,
-                        comment: generateComment(rank, params, { 
-                            wallCount, repetitionScore, emotionRange, avgLen, dialogRatio,
-                            viewpointConsistency, redundancyLabel, rhythmVariation, keywordDensity
-                        }),
-                        radarData: [
-                            { label: '文体リズム', score: Math.round(rhythmScore), rank: getRankChar(rhythmScore), desc: '文長・改行・文末' },
-                            { label: '没入感', score: Math.round(immScore), rank: getRankChar(immScore), desc: '会話・五感・視点' },
-                            { label: '構成品質', score: Math.round(grammarScore), rank: getRankChar(grammarScore), desc: '重複・冗長性' },
-                            { label: '物語強度', score: Math.round(storyScore), rank: getRankChar(storyScore), desc: '起伏・要素密度' },
-                        ],
-                        contentMetrics: { 
-                            sentimentTimeline: smoothedPoints, 
-                            senses: senseCounts, 
-                            foundKeywords: Array.from(foundKeywords).slice(0, 12) 
-                        },
-                        detailedMetrics: {
-                            endingPatterns: {
-                                past: Math.round((endingTypes.past / sentenceCount) * 100),
-                                present: Math.round((endingTypes.present / sentenceCount) * 100),
-                                noun: Math.round((endingTypes.noun / sentenceCount) * 100)
-                            },
-                            rhythmVariation: rhythmVariation,
-                            viewpointConsistency: viewpointConsistency,
-                            descriptiveDensity: descriptiveDensityLabel,
-                            psychologicalDepth: psychDepthLabel,
-                            redundancy: redundancyLabel
-                        }
-                    };
-
-                    generateAdvice({ 
-                        avgLen, dialogRatio, kanjiRatio, repetitionScore, wallCount, params,
-                        viewpointConsistency, redundancyLabel, descriptiveDensityLabel,
-                        conjunctionRatio, keywordDensity
-                    });
-                    
-                    nextTick(() => renderCharts(stats.value));
-                    showToast('超高精度解析完了！', 'alert-success');
-
-                } catch(e) {
-                    console.error(e);
-                    showToast('エラーが発生しました', 'alert-error');
-                } finally {
-                    isProcessing.value = false;
-                }
-            };
-
-            const getRankChar = (s) => s>=85?'S':s>=70?'A':s>=50?'B':'C';
-
-            const generateComment = (rank, p, m) => {
-                let comments = [];
-                
-                if (rank === 'SS' || rank === 'S') {
-                    comments.push("素晴らしい完成度です！プロレベルの文章力を備えています。");
-                } else if (rank === 'A') {
-                    comments.push("非常に優れた構成です。細部を磨けばさらに向上します。");
-                } else if (rank === 'B') {
-                    comments.push("良好な水準です。いくつかの改善点があります。");
-                } else {
-                    comments.push("基礎は備わっています。以下の点を重点的に改善しましょう。");
-                }
-                
-                // 具体的なフィードバック
-                if (m.wallCount > 2 && p.group !== 'その他') {
-                    comments.push(`\n・読みづらい長文ブロックが${m.wallCount}箇所。改行を増やして読みやすく。`);
-                }
-                
-                if (Math.abs(m.avgLen - p.targetLen) > 25) {
-                    comments.push(`\n・一文平均${Math.round(m.avgLen)}文字は${p.name}として${m.avgLen > p.targetLen ? '長すぎ' : '短すぎ'}。目安は${p.targetLen}文字。`);
-                }
-                
-                if (m.viewpointConsistency === 'mixed') {
-                    comments.push(`\n・一人称と三人称が混在。視点を統一すると読みやすくなります。`);
-                }
-                
-                if (m.redundancyLabel === 'excessive') {
-                    comments.push(`\n・冗長な表現が目立ちます。簡潔な表現を心がけましょう。`);
-                }
-                
-                if (m.rhythmVariation === 'poor') {
-                    comments.push(`\n・文末パターンが単調。「た」「る」の繰り返しを避け、変化をつけましょう。`);
-                }
-                
-                if (m.keywordDensity < 0.2 && p.keywords && p.keywords.length > 0) {
-                    comments.push(`\n・${p.name}らしさを出すキーワードが少なめ。ジャンル要素を強化しましょう。`);
-                }
-                
-                return comments.join('');
-            };
-
-            const generateAdvice = (m) => {
-                const list = [];
-                const p = m.params;
-                
-                list.push({ 
-                    label: '会話比率', 
-                    value: Math.round(m.dialogRatio) + '%', 
-                    target: `${p.minDialog}%前後`, 
-                    statusBadge: Math.abs(m.dialogRatio - p.minDialog) < 10 ? 'badge-success' : 'badge-warning', 
-                    msg: Math.abs(m.dialogRatio - p.minDialog) > 15 ? '目安から大きく外れています。' : '適切な範囲です。'
+            isProcessing.value = true;
+            setTimeout(() => {
+                const result = performAnalysis(text);
+                stats.value = result;
+                generateAdvice(result.contentMetrics, currentScoringProfile.value);
+                nextTick(() => {
+                    renderCharts(result);
+                    document.getElementById('results-area')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 });
-                
+                isProcessing.value = false;
+            }, 300);
+        };
+
+        const performAnalysis = (text) => {
+            const profile = currentScoringProfile.value;
+            
+            const sentences = text.split(/[。！？\n]/).filter(s => s.trim().length > 0);
+            const totalChars = text.replace(/\s/g, '').length;
+            const avgLen = totalChars / sentences.length;
+            
+            const sentenceLengths = sentences.map(s => s.replace(/\s/g, '').length);
+            const variance = sentenceLengths.reduce((sum, len) => sum + Math.pow(len - avgLen, 2), 0) / sentences.length;
+            const stdDev = Math.sqrt(variance);
+            const tempoVariance = stdDev / avgLen;
+            
+            const dialogLines = text.match(/「[^」]*」|『[^』]*』|"[^"]*"|'[^']*'/g) || [];
+            const dialogChars = dialogLines.join('').length;
+            const dialogRatio = (dialogChars / totalChars) * 100;
+            
+            const endingPatterns = {
+                '〜た/だ': /[たダだ][。！？」』]/g,
+                '〜る': /[るル][。！？」』]/g,
+                '〜ない': /ない[。！？」』]/g,
+                '〜のだ/んだ': /[のん][だダ][。！？」』]/g,
+                '〜である': /である[。！？」』]/g,
+                '〜ます/です': /[ますです][。！？」』]/g,
+                '体言止め': /[ぁ-ん][。！？」』]/g,
+                '〜か': /か[。！？」』]/g,
+                '〜ね/よ/な': /[ねよな][。！？」』]/g,
+                '〜そうだ': /そうだ[。！？」』]/g
+            };
+            
+            const endingCounts = {};
+            let totalEndings = 0;
+            
+            for (let [pattern, regex] of Object.entries(endingPatterns)) {
+                const matches = text.match(regex) || [];
+                endingCounts[pattern] = matches.length;
+                totalEndings += matches.length;
+            }
+            
+            const endingDistribution = [];
+            for (let [pattern, count] of Object.entries(endingCounts)) {
+                if (count > 0) {
+                    endingDistribution.push({
+                        pattern,
+                        count,
+                        percentage: (count / totalEndings) * 100
+                    });
+                }
+            }
+            endingDistribution.sort((a, b) => b.count - a.count);
+            
+            let entropy = 0;
+            for (let item of endingDistribution) {
+                const p = item.percentage / 100;
+                if (p > 0) entropy -= p * Math.log2(p);
+            }
+            const maxEntropy = Math.log2(Object.keys(endingPatterns).length);
+            const endingVariety = (entropy / maxEntropy) * 100;
+            
+            const firstPersonMarkers = text.match(/私|僕|俺|わたし|ぼく|おれ|自分|うち/g) || [];
+            const thirdPersonMarkers = text.match(/彼|彼女|[一-龯]{1,3}は|[一-龯]{1,3}が/g) || [];
+            
+            const fpRatio = firstPersonMarkers.length / sentences.length;
+            const tpRatio = thirdPersonMarkers.length / sentences.length;
+            
+            let viewpointConsistency = 'consistent';
+            if (fpRatio > 0.3 && tpRatio > 0.3) {
+                viewpointConsistency = 'mixed';
+            } else if (fpRatio > 0.1 && tpRatio > 0.1) {
+                viewpointConsistency = 'slightly_mixed';
+            }
+            
+            const redundantPatterns = [
+                /することができる/g,
+                /することが可能/g,
+                /というもの/g,
+                /というわけ/g,
+                /ということ/g,
+                /〜したりする/g,
+                /非常に|とても|すごく|かなり|結構/g,
+                /基本的に|一般的に|要するに/g,
+                /〜のような気がする/g,
+                /〜と思われる/g
+            ];
+            
+            let redundancyCount = 0;
+            for (let pattern of redundantPatterns) {
+                const matches = text.match(pattern) || [];
+                redundancyCount += matches.length;
+            }
+            
+            const redundancyScore = Math.max(0, 100 - (redundancyCount / sentences.length) * 20);
+            const redundancyLabel = redundancyCount < 3 ? 'minimal' : redundancyCount < 8 ? 'moderate' : 'excessive';
+            
+            const goodConnectors = text.match(/しかし|だが|ところが|すると|そして|それで|だから|なぜなら|つまり|例えば|ただし|もっとも|一方|また/g) || [];
+            const poorConnectors = text.match(/そして、そして|それで、それで|でも、でも/g) || [];
+            
+            const connectorScore = Math.min(100, (goodConnectors.length / sentences.length) * 150 - poorConnectors.length * 10);
+            
+            // まず、よく使われる貧弱な表現をカウント
+            const poorVocab = {
+                'すごい': (text.match(/すごい/g) || []).length,
+                'いい感じ': (text.match(/いい感じ|良い感じ/g) || []).length,
+                'めっちゃ': (text.match(/めっちゃ|めちゃ/g) || []).length,
+                'やばい': (text.match(/やばい|ヤバい/g) || []).length,
+                'なんか': (text.match(/なんか|何か/g) || []).length,
+                'みたいな': (text.match(/みたいな/g) || []).length,
+                'って感じ': (text.match(/って感じ|っぽい感じ/g) || []).length,
+                'まあまあ': (text.match(/まあまあ/g) || []).length,
+                'ちょっと': (text.match(/ちょっと/g) || []).length,
+            };
+            
+            // テキストから2文字以上の単語を抽出（より細かく）
+            const allWords = text.match(/[ぁ-んァ-ヶー一-龠々]+/g) || [];
+            const functionalWords = /^(は|が|を|に|へ|と|で|から|まで|より|の|や|か|も|こそ|さえ|だけ|ばかり|など|し|た|て|だ|です|ます|ある|いる|する|なる|れる|られる|せる|させる|ない|ぬ|ん|これ|それ|あれ|この|その|あの|ここ|そこ|あそこ|こう|そう|ああ)$/;
+            const contentWords = allWords.filter(w => w.length >= 2 && !functionalWords.test(w));
+            const uniqueWords = new Set(contentWords);
+            
+            const wordFreq = {};
+            contentWords.forEach(w => {
+                wordFreq[w] = (wordFreq[w] || 0) + 1;
+            });
+            
+            // 頻出語のリスト（コメント表示用）
+            const repeatedWords = Object.entries(wordFreq).filter(([w, c]) => c > 2).sort((a, b) => b[1] - a[1]);
+            
+            // 貧弱な語彙の使用回数をカウント
+            let poorVocabCount = 0;
+            let poorVocabPenalty = 0;
+            Object.entries(poorVocab).forEach(([word, count]) => {
+                if (count > 0) {
+                    poorVocabCount += count;
+                    // 1回目から減点（各出現で10点減点）
+                    poorVocabPenalty += count * 10;
+                }
+            });
+            
+            // 繰り返し使用による減点を計算
+            let repetitionPenalty = 0;
+            Object.entries(wordFreq).forEach(([word, count]) => {
+                if (count >= 3) {
+                    repetitionPenalty += (count - 2) * 5;
+                }
+                if (count >= 5) {
+                    repetitionPenalty += (count - 4) * 5;
+                }
+            });
+            
+            // 語彙の多様性を計算
+            const diversityRatio = contentWords.length > 0 ? (uniqueWords.size / contentWords.length) : 0;
+            
+            // 基本スコアは多様性比率に基づく
+            let baseScore = 0;
+            if (diversityRatio >= 0.8) {
+                baseScore = 100;
+            } else if (diversityRatio >= 0.5) {
+                baseScore = ((diversityRatio - 0.5) / 0.3) * 100;
+            } else {
+                baseScore = diversityRatio * 100;
+            }
+            
+            // 総ペナルティを適用（貧弱な語彙 + 繰り返し）
+            const totalPenalty = poorVocabPenalty + repetitionPenalty;
+            const vocabularyRichness = Math.max(0, baseScore - Math.min(90, totalPenalty));
+            
+            const sensoryWords = text.match(/見|観|眺め|音|声|響|香|匂|味|触|感触|冷た|温か|熱|痛|柔らか|硬/g) || [];
+            const sensoryDensity = (sensoryWords.length / sentences.length) * 100;
+            
+            const psychWords = text.match(/思|考|感じ|気持ち|心|胸|不安|恐怖|喜|悲|怒|驚|期待|願|望|迷|悩/g) || [];
+            const psychDensity = (psychWords.length / sentences.length) * 100;
+            
+            const actionWords = text.match(/歩|走|跳|座|立|見|聞|話|言|叫|笑|泣|握|掴|投|取|開|閉|動|止/g) || [];
+            const actionDensity = (actionWords.length / sentences.length) * 100;
+            
+            const sceneWords = text.match(/空|雲|太陽|月|星|風|雨|雪|木|花|山|海|川|街|建物|部屋|窓|光|影|色/g) || [];
+            const sceneDensity = (sceneWords.length / sentences.length) * 100;
+            
+            const totalDescDensity = sensoryDensity + psychDensity + actionDensity + sceneDensity;
+            
+            const kanjiCount = (text.match(/[一-龯]/g) || []).length;
+            const hiraganaCount = (text.match(/[ぁ-ん]/g) || []).length;
+            const katakanaCount = (text.match(/[ァ-ヴ]/g) || []).length;
+            
+            const kanjiRatio = (kanjiCount / totalChars) * 100;
+            const hiraganaRatio = (hiraganaCount / totalChars) * 100;
+            const katakanaRatio = (katakanaCount / totalChars) * 100;
+            
+            const keywordRegex = new RegExp(profile.keywords, 'gi');
+            const keywordMatches = text.match(keywordRegex) || [];
+            const keywordDensity = keywordMatches.length / sentences.length;
+        // ポジティブワード（喜び、愛、希望、勝利、安らぎ、称賛）
+/**
+ * 高精度版：感情分析用単語リスト＆タイムライン生成コード
+ * * 拡張ポイント：
+ * - 語彙数を大幅に増加（日常会話、ビジネス、熟語、感情表現を網羅）
+ * - 配列管理によるメンテナンス性の向上
+ */
+
+// ==========================================
+// ポジティブワード定義（配列で管理）
+// ==========================================
+const positiveList = [
+    // --- 喜び・幸福・快楽 ---
+    '嬉し', '楽し', '幸せ', '幸', '喜', '笑', 'ハッピー', '快哉', '愉快', '歓喜', 
+    '悦', '満喫', '堪能', '心地よ', '心地良', '快感', '快楽', 'ウキウキ', 'ワクワク', 
+    'ルンルン', '上機嫌', 'ご機嫌', '笑顔', '微笑', '爆笑', '大笑', '談笑',
+
+    // --- 愛・信頼・絆 ---
+    '好', '愛', '恋', '惚', '絆', '信頼', '信用', '親愛', '熱愛', '溺愛', '最愛', 
+    '慕', '懐', '仲良', '仲間', '相棒', '親友', '盟友', '団結', '結束', '協力', 
+    '協調', '和解', '融和', '包容', '優し', '温か', '思いやり', '慈', '仁',
+
+    // --- 称賛・尊敬・評価 ---
+    '素晴ら', '素敵', '見事', '立派', '流石', 'さすが', '称賛', '賞賛', '絶賛', 
+    '尊敬', '敬意', '憧れ', '誇', '名誉', '栄光', '有能', '天才', '秀才', '英知', 
+    '賢', '聡明', '鋭', '巧', '上手', 'プロ', '熟練', '達人', '傑作', '名作', 
+    '良', '善', '好感', '魅了', '魅力', 'カリスマ', 'イケメン', '美人', '可憐',
+
+    // --- 成功・勝利・達成 ---
+    '成功', '成し遂', '達成', '勝利', '勝', '優勝', '制覇', '突破', '克服', '解決', 
+    '完遂', '完了', '成就', '実現', '開花', '実り', '収穫', '獲得', 'ゲット', 
+    '当たり', '当選', '合格', '採用', '内定', '昇進', '昇格', '栄転', '躍進', 
+    '発展', '進化', '成長', '向上', '改善', '好転', '回復', '復帰',
+
+    // --- 希望・運・未来 ---
+    '希望', '夢', '期待', '待望', '予感', '可能性', '展望', '光明', '光', '輝', 
+    '運', 'ツキ', 'ラッキー', '幸運', '奇跡', '神', '天国', '極楽', '吉', '福', 
+    'チャンス', '好機', '有利', '有望', '安泰',
+
+    // --- 安心・癒やし・美 ---
+    '安心', '安ら', '癒', 'リラックス', 'のんびり', 'まったり', 'ほっこり', '平穏', 
+    '平和', '無事', '安全', '健全', '健康', '元気', '活発', '爽快', '清々', '清らか', 
+    '綺麗', '美し', '麗', '華やか', '雅', '美味', 'うま', '旨', '絶品'
+];
+
+// ==========================================
+// ネガティブワード定義（配列で管理）
+// ==========================================
+const negativeList = [
+    // --- 悲しみ・苦痛・孤独 ---
+    '悲し', '辛', '苦し', '痛', '泣', '涙', '号泣', '嘆', '哀', '傷', '孤独', 
+    '寂', '孤立', '疎外', '別れ', '失恋', '喪失', '失', '亡', '死', '遺体', '葬', 
+    '不幸', '薄幸', '惨', '残酷', '無念', '残念', '気の毒', '哀れ', '憐',
+
+    // --- 怒り・憎悪・敵意 ---
+    '怒', '腹立', 'ムカ', 'イラ', '憤', '激怒', '憎', '嫌', '仇', '敵', '恨', 
+    '妬', '嫉妬', '殺意', '殺害', '害', '虐', '罵', '暴言', '暴力', '暴行', '喧嘩', 
+    '争', '対立', '抗争', '紛争', '揉め', '非難', '批判', '中傷', '誹謗', '炎上', 
+    'クズ', 'ゴミ', 'カス', '死ね', 'ウザ', 'キモ', '地獄', '悪夢',
+
+    // --- 恐怖・不安・絶望 ---
+    '怖', '恐', '怯', '震', 'ビビ', '不安', '心配', '懸念', '危惧', '焦', 'パニック', 
+    '絶望', '諦', '断念', '無理', '駄目', '限界', '手遅れ', '終', 'オワコン', 
+    '脅威', '危機', 'ピンチ', '危険', 'リスク', '不吉', '呪', '祟', '悪寒',
+
+    // --- 失敗・損失・後悔 ---
+    '失敗', '敗北', '負け', '敗戦', '脱落', '落選', '不合格', '落ち', 'ミス', 
+    '過ち', '誤', '損', '赤字', '借金', '貧困', '欠陥', '不良', '故障', 'バグ', 
+    'エラー', '不具合', '邪魔', '妨害', '遅延', '停滞', '後悔', '悔', '反省', 
+    '懺悔', '罪', '罰', '謝罪', '詫',
+
+    // --- 不快・嫌悪・疲労 ---
+    '不快', '不満', '不平', '文句', '愚痴', '最悪', '最低', '劣悪', '汚', '臭', 
+    '腐', '醜', '卑怯', '卑劣', '狡猾', '悪', '邪', '偽', '嘘', '詐欺', '騙', 
+    '裏切', '疲', '倦怠', '過労', 'バテ', 'ダル', '面倒', '退屈', '飽', '鬱', 
+    '憂鬱', '沈', '暗', '陰湿', '違和感', '吐き気', '気絶', '倒'
+];
+
+// 配列を正規表現パターン文字列に結合 ('|'で繋ぐ)
+const positivePattern = positiveList.join('|');
+const negativePattern = negativeList.join('|');
+
+// 正規表現オブジェクトの生成
+const posRegex = new RegExp(positivePattern, 'g');
+const negRegex = new RegExp(negativePattern, 'g');
+
+// ==========================================
+// 解析ロジック実行部
+// ==========================================
+
+// text変数は外部から与えられる想定
+// const text = "ここに解析したい文章が入ります..."; 
+
+// 全体のマッチング（単語リスト取得用）
+const positiveWords = text.match(posRegex) || [];
+const negativeWords = text.match(negRegex) || [];
+
+// タイムラインの生成
+const sentimentTimeline = [];
+// チャンクサイズを動的に調整（最低でも1文字以上、基本は長さの1/20）
+const chunkSize = Math.max(1, Math.ceil(text.length / 20)); 
+
+// 分割数はテキスト長に応じて最大20、短い場合はそれ以下になるよう調整
+const steps = Math.ceil(text.length / chunkSize);
+
+for (let i = 0; i < steps; i++) {
+    const chunk = text.slice(i * chunkSize, (i + 1) * chunkSize);
+    
+    // 拡張された正規表現を使ってカウント
+    const pos = (chunk.match(posRegex) || []).length;
+    const neg = (chunk.match(negRegex) || []).length;
+    
+    // スコア計算
+    // 単純な引き算に加え、全体数に対する比率なども考慮可能だが、
+    // ここでは視認性を高めるためシンプルに強調（* 2）
+    const score = (pos - neg) * 2;
+    sentimentTimeline.push(score); 
+}
+
+// 結果の出力（デバッグ用）
+console.log("Positive Count:", positiveWords.length);
+console.log("Negative Count:", negativeWords.length);
+console.log("Score Timeline:", sentimentTimeline);
+console.log("Sample Words:", positiveWords.slice(0, 5), negativeWords.slice(0, 5));
+            const overallSentiment = positiveWords.length - negativeWords.length;
+            
+            const w = profile.weights;
+            
+            const vocabScore = vocabularyRichness * (w.vocab || 1);
+            const descScore = (Math.min(100, totalDescDensity * 1.2) + 15) * (w.description || 1);
+            const dialogScore = (Math.max(0, 100 - Math.abs(dialogRatio - profile.minDialog) * 1.0) + 10) * (w.dialogue || 1);
+            const sentimentScore = (Math.min(100, (positiveWords.length + negativeWords.length) * 5) + 10) * (w.sentiment || 1);
+            const endingScore = (endingVariety + 20) * (w.ending || 1);
+            const viewpointScore = (viewpointConsistency === 'consistent' ? 100 : viewpointConsistency === 'slightly_mixed' ? 85 : 60) * (w.viewpoint || 1);
+            const idealVariance = 0.3;
+            const tempoScore = (Math.max(0, 100 - Math.abs(tempoVariance - idealVariance) * 100) + 15) * (w.tempo || 1);
+            const redundScore = (redundancyScore + 10) * (w.redundancy || 1);
+            const connectorFinalScore = (Math.max(0, connectorScore) + 15) * (w.connector || 1);
+            const keywordScore = (Math.min(100, keywordDensity * 80) + 20) * (w.keyword || 1);
+            
+            const totalWeight = Object.values(w).reduce((sum, val) => sum + val, 0);
+            const totalScore = (vocabScore + descScore + dialogScore + sentimentScore + endingScore + 
+                              viewpointScore + tempoScore + redundScore + connectorFinalScore + keywordScore) / totalWeight;
+            
+            let rank = 'D';
+            if (totalScore >= 90) rank = 'SS';
+            else if (totalScore >= 80) rank = 'S';
+            else if (totalScore >= 70) rank = 'A';
+            else if (totalScore >= 60) rank = 'B';
+            else if (totalScore >= 50) rank = 'C';
+            
+            const comment = generateComment(rank, totalScore, profile, {
+                dialogRatio, avgLen, endingVariety, viewpointConsistency, 
+                redundancyLabel, vocabularyRichness, totalDescDensity
+            });
+            
+            const tags = generateTags(totalScore, dialogRatio, avgLen, keywordDensity, endingVariety);
+            
+            return {
+                rank,
+                totalScore,
+                comment,
+                tags,
+                mainMetrics: [
+                    { label: '文章数', value: sentences.length, sub: `平均${avgLen.toFixed(1)}文字/文` },
+                    { label: '会話比率', value: dialogRatio.toFixed(1) + '%', sub: `${dialogLines.length}個の会話` },
+                    { label: '語彙豊富度', value: vocabularyRichness.toFixed(1) + '%', sub: `${uniqueWords.size}種の語彙` },
+                    { label: '描写密度', value: totalDescDensity.toFixed(1), sub: '感覚+心理+動作+情景' }
+                ],
+                radarData: [
+                    { label: '語彙力', score: Math.round(vocabularyRichness) },
+                    { label: '描写力', score: Math.min(100, totalDescDensity * 1.2) },
+                    { label: '会話', score: Math.max(0, 100 - Math.abs(dialogRatio - profile.minDialog) * 1.0) },
+                    { label: '感情表現', score: Math.min(100, (positiveWords.length + negativeWords.length) * 5) },
+                    { label: '文末変化', score: endingVariety },
+                    { label: 'テンポ', score: Math.max(0, 100 - Math.abs(tempoVariance - 0.3) * 100) }
+                ],
+                qualityMetrics: [
+                    { label: '語彙の豊かさ', score: Math.round(vocabularyRichness), 
+                      comment: repeatedWords.length > 0 ? `「${repeatedWords[0][0]}」(${repeatedWords[0][1]}回)など繰り返しあり` : '多様な語彙を使用' },
+                    { label: '描写の多層性', score: Math.round(Math.min(100, totalDescDensity * 1.2)), 
+                      comment: `感覚${sensoryDensity.toFixed(0)}% 心理${psychDensity.toFixed(0)}% 動作${actionDensity.toFixed(0)}%` },
+                    { label: '会話の自然さ', score: Math.round(Math.max(0, 100 - Math.abs(dialogRatio - profile.minDialog) * 1.0)), 
+                      comment: dialogRatio > profile.minDialog + 20 ? '会話がやや多め' : dialogRatio < profile.minDialog - 20 ? '会話が少なめ' : 'バランス良好' },
+                    { label: '文末バリエーション', score: Math.round(endingVariety), 
+                      comment: endingVariety > 70 ? '豊富な文末表現' : endingVariety > 50 ? 'やや単調' : '文末パターンが限定的' },
+                    { label: '視点の一貫性', score: viewpointConsistency === 'consistent' ? 100 : viewpointConsistency === 'slightly_mixed' ? 70 : 40, 
+                      comment: viewpointConsistency === 'consistent' ? '視点が統一されている' : '一人称・三人称の混在あり' },
+                    { label: '文章の簡潔性', score: Math.round(redundancyScore), 
+                      comment: redundancyLabel === 'minimal' ? '簡潔で読みやすい' : '冗長表現を削減すると良い' },
+                    { label: 'テンポの良さ', score: Math.round(Math.max(0, 100 - Math.abs(tempoVariance - 0.3) * 100)), 
+                      comment: tempoVariance > 0.5 ? '文長の差が大きい' : tempoVariance < 0.2 ? '文長が単調' : 'リズムが良好' },
+                    { label: '接続詞の適切性', score: Math.round(Math.max(0, connectorScore)), 
+                      comment: connectorScore > 70 ? '論理展開が明確' : '接続詞を効果的に使うと読みやすくなる' },
+                    { label: 'ジャンル適合度', score: Math.round(Math.min(100, keywordDensity * 80)), 
+                      comment: keywordDensity > 0.5 ? `${profile.name}らしさが出ている` : 'ジャンル要素を増やすと良い' },
+                    { label: '漢字バランス', score: Math.round(Math.max(0, 100 - Math.abs(kanjiRatio - 27) * 3)), 
+                      comment: kanjiRatio > 40 ? '漢字が多く硬い' : kanjiRatio < 18 ? 'ひらがなが多め' : '適切なバランス' }
+                ],
+                contentMetrics: {
+                    avgLen,
+                    dialogRatio,
+                    kanjiRatio,
+                    hiraganaRatio,
+                    katakanaRatio,
+                    viewpointConsistency,
+                    redundancyLabel,
+                    keywordDensity,
+                    endingPatterns: endingDistribution.slice(0, 5),
+                    endingVariety,
+                    sentimentTimeline,
+                    sensoryDensity,
+                    psychDensity,
+                    actionDensity,
+                    sceneDensity,
+                    vocabularyRichness,
+                    tempoVariance,
+                    repeatedWords: repeatedWords.slice(0, 3)
+                }
+            };
+        };
+
+        const generateComment = (rank, score, profile, metrics) => {
+            const comments = {
+                SS: [
+                    `${profile.name}として極めて高い完成度です。語彙の選択、描写の密度、文章のリズムすべてが秀逸で、読者を引き込む力があります。`,
+                    `プロ作家レベルの文章力です。${profile.name}の特徴を完璧に捉え、独自の文体を確立しています。このクオリティなら商業出版も十分視野に入ります。`
+                ],
+                S: [
+                    `${profile.name}として非常に高い水準です。文末表現の豊かさ、描写の多層性が際立っており、読者を飽きさせない工夫が随所に見られます。`,
+                    `優れた文章です。${profile.name}らしさを保ちながら、独自の個性も光っています。さらに磨けば傑作になる可能性を秘めています。`
+                ],
+                A: [
+                    `${profile.name}として良質な文章です。基本的な技術は確立されており、読みやすく魅力的です。細部を磨くことでさらに向上します。`,
+                    `しっかりとした文章力があります。${profile.name}の要素を適切に取り入れており、読者の期待に応える内容になっています。`
+                ],
+                B: [
+                    `${profile.name}としての基礎はできています。いくつかの改善点（${getMainIssue(metrics)}など）に取り組むことで、より魅力的になるでしょう。`,
+                    `まずまずの出来です。${profile.name}らしさは感じられますが、文章のメリハリや表現の工夫でさらに良くなります。`
+                ],
+                C: [
+                    `${profile.name}の基本要素は含まれていますが、まだ伸びしろが大きいです。特に${getMainIssue(metrics)}の改善に注力しましょう。`,
+                    `基礎的な文章は書けていますが、${profile.name}としての特徴が薄めです。描写や会話の工夫で個性を出していきましょう。`
+                ],
+                D: [
+                    `${profile.name}としてはまだ発展途上です。${getMainIssue(metrics)}などの基本から見直し、一歩ずつ改善していきましょう。`,
+                    `改善の余地が多くあります。焦らず、文章の基本（文末表現、視点、描写）から丁寧に磨いていくことをお勧めします。`
+                ]
+            };
+            
+            const rankComments = comments[rank] || comments.D;
+            return rankComments[Math.floor(Math.random() * rankComments.length)];
+        };
+
+        const getMainIssue = (m) => {
+            const issues = [];
+            if (m.endingVariety < 30) issues.push('文末パターンの単調さ');
+            if (m.viewpointConsistency === 'mixed') issues.push('視点の混在');
+            if (m.redundancyLabel === 'excessive') issues.push('冗長表現');
+            if (m.vocabularyRichness < 30) issues.push('語彙の乏しさ');
+            if (m.totalDescDensity < 40) issues.push('描写の薄さ');
+            return issues[0] || '全体的なバランス';
+        };
+
+        const generateTags = (score, dialogRatio, avgLen, keywordDensity, endingVariety) => {
+            const tags = [];
+            if (score >= 80) tags.push('高品質');
+            if (dialogRatio > 45) tags.push('会話多め');
+            if (dialogRatio < 25) tags.push('地の文中心');
+            if (avgLen > 60) tags.push('長文型');
+            if (avgLen < 35) tags.push('短文型');
+            if (keywordDensity > 0.6) tags.push('ジャンル色濃厚');
+            if (endingVariety > 70) tags.push('文末多彩');
+            if (endingVariety < 50) tags.push('文末改善推奨');
+            return tags.slice(0, 5);
+        };
+
+        const getScoreColor = (score) => {
+            if (score >= 80) return 'bg-gradient-to-r from-green-500 to-emerald-600';
+            if (score >= 60) return 'bg-gradient-to-r from-blue-500 to-cyan-600';
+            if (score >= 40) return 'bg-gradient-to-r from-yellow-500 to-orange-500';
+            return 'bg-gradient-to-r from-red-500 to-pink-600';
+        };
+
+        const getScoreBg = (score) => {
+            if (score >= 80) return 'badge-success';
+            if (score >= 60) return 'badge-info';
+            if (score >= 40) return 'badge-warning';
+            return 'badge-error';
+        };
+
+        const generateAdvice = (m, p) => {
+            const list = [];
+            
+            if (Math.abs(m.avgLen - p.targetLen) > 30) {
                 list.push({ 
                     label: '平均文長', 
                     value: Math.round(m.avgLen) + '文字', 
                     target: `${p.targetLen}文字前後`, 
-                    statusBadge: Math.abs(m.avgLen - p.targetLen) < 15 ? 'badge-success' : 'badge-warning', 
-                    msg: Math.abs(m.avgLen - p.targetLen) > 20 ? 'ジャンルの目安と差があります。' : '適切な長さです。'
+                    statusBadge: 'badge-warning', 
+                    msg: m.avgLen > p.targetLen ? '文が長めです。読みやすさ重視なら短縮を検討。' : '文が短めです。描写を増やすと深みが出ます。'
                 });
-                
+            }
+            
+            if (m.kanjiRatio > 50 || m.kanjiRatio < 12) {
                 list.push({ 
                     label: '漢字率', 
                     value: Math.round(m.kanjiRatio) + '%', 
                     target: '20-35%', 
-                    statusBadge: m.kanjiRatio > 45 || m.kanjiRatio < 15 ? 'badge-warning' : 'badge-success', 
-                    msg: m.kanjiRatio > 45 ? '漢字が多く硬い印象。' : m.kanjiRatio < 15 ? 'やや平仮名が多め。' : '適切なバランスです。'
+                    statusBadge: 'badge-warning', 
+                    msg: m.kanjiRatio > 40 ? '漢字が多く硬い印象。ひらがなを増やすと柔らかくなります。' : 'やや平仮名が多め。漢字を増やすと締まります。'
                 });
-                
-                if (m.viewpointConsistency !== 'consistent') {
-                    list.push({ 
-                        label: '視点一貫性', 
-                        value: m.viewpointConsistency === 'mixed' ? '混在あり' : 'やや混在', 
-                        target: '一貫', 
-                        statusBadge: 'badge-warning', 
-                        msg: '一人称・三人称の混在が見られます。視点を統一しましょう。'
-                    });
-                }
-                
-                if (m.redundancyLabel !== 'minimal') {
-                    list.push({ 
-                        label: '冗長表現', 
-                        value: m.redundancyLabel === 'excessive' ? '多い' : 'やや多い', 
-                        target: '最小限', 
-                        statusBadge: 'badge-warning', 
-                        msg: '「することができる」等の冗長表現が目立ちます。簡潔に。'
-                    });
-                }
-                
-                if (m.keywordDensity < 0.25) {
-                    list.push({ 
-                        label: 'ジャンル要素', 
-                        value: Math.round(m.keywordDensity * 100) + '%', 
-                        target: '25%以上', 
-                        statusBadge: 'badge-info', 
-                        msg: `${p.name}らしいキーワードを増やすとより没入感が高まります。`
-                    });
-                }
-                
-                adviceList.value = list;
-            };
-
-            const renderCharts = (data) => {
-                const ctxRadar = document.getElementById('radarChart');
-                const ctxSentiment = document.getElementById('sentimentChart');
-                if (radarChart) radarChart.destroy();
-                if (sentimentChart) sentimentChart.destroy();
-
-                const gridColor = isDarkMode.value ? '#334155' : '#e2e8f0';
-                const textColor = isDarkMode.value ? '#cbd5e1' : '#475569';
-                
-                radarChart = new Chart(ctxRadar, {
-                    type: 'radar',
-                    data: {
-                        labels: data.radarData.map(d => d.label),
-                        datasets: [{ 
-                            label: 'スコア', 
-                            data: data.radarData.map(d => d.score), 
-                            backgroundColor: 'rgba(56, 189, 248, 0.25)', 
-                            borderColor: '#38bdf8', 
-                            borderWidth: 3,
-                            pointBackgroundColor: '#38bdf8',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 5
-                        }]
-                    },
-                    options: { 
-                        maintainAspectRatio: false, 
-                        scales: { 
-                            r: { 
-                                min: 0, 
-                                max: 100, 
-                                grid: { color: gridColor }, 
-                                ticks: { 
-                                    display: true,
-                                    stepSize: 25,
-                                    color: textColor,
-                                    backdropColor: 'transparent'
-                                },
-                                pointLabels: {
-                                    color: textColor,
-                                    font: { size: 12, weight: 'bold' }
-                                }
-                            } 
-                        }, 
-                        plugins: { legend: { display: false } } 
-                    }
+            }
+            
+            if (m.viewpointConsistency !== 'consistent') {
+                list.push({ 
+                    label: '視点一貫性', 
+                    value: m.viewpointConsistency === 'mixed' ? '混在あり' : 'やや混在', 
+                    target: '一貫', 
+                    statusBadge: 'badge-error', 
+                    msg: '一人称・三人称の混在が見られます。視点を統一すると読みやすくなります。'
                 });
+            }
+            
+            if (m.redundancyLabel !== 'minimal') {
+                list.push({ 
+                    label: '冗長表現', 
+                    value: m.redundancyLabel === 'excessive' ? '多い' : 'やや多い', 
+                    target: '最小限', 
+                    statusBadge: 'badge-warning', 
+                    msg: '「することができる」「というもの」等の冗長表現が目立ちます。簡潔に書き直しましょう。'
+                });
+            }
+            
+            if (m.endingVariety < 40) {
+                list.push({ 
+                    label: '文末バリエーション', 
+                    value: Math.round(m.endingVariety) + '点', 
+                    target: '50点以上', 
+                    statusBadge: 'badge-warning', 
+                    msg: '文末パターンが単調です。「〜た」以外の表現（体言止め、疑問形など）を増やしましょう。'
+                });
+            }
+            
+            if (m.vocabularyRichness < 50) {
+                let vocabularyMsg = '';
+                let vocabularyTarget = '';
+                let vocabularyBadge = 'badge-warning';
+                
+                if (m.vocabularyRichness < 30) {
+                    vocabularyMsg = `語彙の多様性が著しく不足しています。${m.repeatedWords.length > 0 ? `「${m.repeatedWords.slice(0, 3).map(w => w[0]).join('」「')}」などの` : ''}同じ語の繰り返しが目立ちます。類語辞典を活用し、表現のバリエーションを増やしましょう。`;
+                    vocabularyTarget = '50%以上推奨';
+                    vocabularyBadge = 'badge-error';
+                } else if (m.vocabularyRichness < 40) {
+                    vocabularyMsg = `語彙の繰り返しがやや多く見られます。${m.repeatedWords.length > 0 ? `特に「${m.repeatedWords.slice(0, 2).map(w => w[0]).join('」「')}」など。` : ''}もう少し多様な表現を心がけると、文章に深みが出ます。`;
+                    vocabularyTarget = '50%以上推奨';
+                    vocabularyBadge = 'badge-warning';
+                } else {
+                    vocabularyMsg = `語彙はまずまずですが、${m.repeatedWords.length > 0 ? `「${m.repeatedWords[0][0]}」などの` : ''}一部の語の繰り返しが見られます。類語を使うとさらに洗練された文章になります。`;
+                    vocabularyTarget = '50%以上推奨';
+                    vocabularyBadge = 'badge-info';
+                }
+                
+                list.push({ 
+                    label: '語彙の豊かさ', 
+                    value: Math.round(m.vocabularyRichness) + '%', 
+                    target: vocabularyTarget, 
+                    statusBadge: vocabularyBadge, 
+                    msg: vocabularyMsg
+                });
+            }
+            
+            if (m.tempoVariance < 0.10) {
+                list.push({ 
+                    label: '文章のリズム', 
+                    value: '単調', 
+                    target: '適度な変化', 
+                    statusBadge: 'badge-info', 
+                    msg: '文長がほぼ同じで単調です。長短を織り交ぜるとリズムが生まれます。'
+                });
+            }
+            
+            if (m.tempoVariance > 0.7) {
+                list.push({ 
+                    label: '文章のリズム', 
+                    value: 'ばらつき大', 
+                    target: '適度な変化', 
+                    statusBadge: 'badge-warning', 
+                    msg: '文長の差が大きすぎます。もう少し均一にすると読みやすくなります。'
+                });
+            }
+            
+            if (m.keywordDensity < 0.15) {
+                list.push({ 
+                    label: 'ジャンル要素', 
+                    value: Math.round(m.keywordDensity * 100) + '%', 
+                    target: '15%以上', 
+                    statusBadge: 'badge-info', 
+                    msg: `${p.name}らしいキーワードを増やすと、ジャンルの雰囲気がより強まります。`
+                });
+            }
+            
+            if (m.sensoryDensity < 15 && p.name.includes('純文学')) {
+                list.push({ 
+                    label: '感覚描写', 
+                    value: Math.round(m.sensoryDensity) + '%', 
+                    target: '20%以上', 
+                    statusBadge: 'badge-info', 
+                    msg: '視覚・聴覚・触覚などの五感描写を増やすと、臨場感が高まります。'
+                });
+            }
+            
+            adviceList.value = list.slice(0, 8);
+        };
 
-                sentimentChart = new Chart(ctxSentiment, {
-                    type: 'line',
-                    data: {
-                        labels: data.contentMetrics.sentimentTimeline.map((_, i) => i),
-                        datasets: [{ 
-                            data: data.contentMetrics.sentimentTimeline, 
-                            borderColor: '#f472b6', 
-                            backgroundColor: 'rgba(244, 114, 182, 0.15)', 
-                            fill: true, 
-                            tension: 0.4, 
-                            pointRadius: 2,
-                            pointHoverRadius: 6,
-                            borderWidth: 3
-                        }]
-                    },
-                    options: { 
-                        maintainAspectRatio: false, 
-                        scales: { 
-                            x: { display: false }, 
-                            y: { 
+        const renderCharts = (data) => {
+            const ctxRadar = document.getElementById('radarChart');
+            const ctxSentiment = document.getElementById('sentimentChart');
+            if (radarChart) radarChart.destroy();
+            if (sentimentChart) sentimentChart.destroy();
+
+            const gridColor = isDarkMode.value ? '#334155' : '#e2e8f0';
+            const textColor = isDarkMode.value ? '#cbd5e1' : '#475569';
+            
+            radarChart = new Chart(ctxRadar, {
+                type: 'radar',
+                data: {
+                    labels: data.radarData.map(d => d.label),
+                    datasets: [{ 
+                        label: 'スコア', 
+                        data: data.radarData.map(d => d.score), 
+                        backgroundColor: 'rgba(56, 189, 248, 0.25)', 
+                        borderColor: '#38bdf8', 
+                        borderWidth: 3,
+                        pointBackgroundColor: '#38bdf8',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5
+                    }]
+                },
+                options: { 
+                    maintainAspectRatio: false, 
+                    scales: { 
+                        r: { 
+                            min: 0, 
+                            max: 100, 
+                            grid: { color: gridColor }, 
+                            ticks: { 
                                 display: true,
-                                min: -10, 
-                                max: 10,
-                                grid: { color: gridColor },
-                                ticks: { color: textColor }
-                            } 
-                        }, 
-                        plugins: { 
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const value = context.parsed.y;
-                                        return value > 0 ? `ポジティブ: ${value.toFixed(1)}` : `ネガティブ: ${value.toFixed(1)}`;
-                                    }
-                                }
+                                stepSize: 25,
+                                color: textColor,
+                                backdropColor: 'transparent'
+                            },
+                            pointLabels: {
+                                color: textColor,
+                                font: { size: 12, weight: 'bold' }
                             }
                         } 
-                    }
-                });
-            };
+                    }, 
+                    plugins: { legend: { display: false } } 
+                }
+            });
 
-            return { 
-                inputText, selectedGenre, groupedGenres, isProcessing, stats, adviceList, 
-                isDarkMode, toastMessage, toastType, toastIcon, currentScoringProfile, 
-                analyzeText, getScoreColor, getScoreBg, rankColorClass, rankGradient, shareResult 
-            };
-        }
-    }).mount('#app');
+            sentimentChart = new Chart(ctxSentiment, {
+                type: 'line',
+                data: {
+                    labels: data.contentMetrics.sentimentTimeline.map((_, i) => i),
+                    datasets: [{ 
+                        data: data.contentMetrics.sentimentTimeline, 
+                        borderColor: '#f472b6', 
+                        backgroundColor: 'rgba(244, 114, 182, 0.15)', 
+                        fill: true, 
+                        tension: 0.4, 
+                        pointRadius: 2,
+                        pointHoverRadius: 6,
+                        borderWidth: 3
+                    }]
+                },
+                options: { 
+                    maintainAspectRatio: false, 
+                    scales: { 
+                        x: { display: false }, 
+                        y: { 
+                            display: true,
+                            min: -10, 
+                            max: 10,
+                            grid: { color: gridColor },
+                            ticks: { color: textColor }
+                        } 
+                    }, 
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed.y;
+                                    return value > 0 ? `ポジティブ: ${value.toFixed(1)}` : `ネガティブ: ${value.toFixed(1)}`;
+                                }
+                            }
+                        }
+                    } 
+                }
+            });
+        };
+
+        return { 
+            inputText, selectedGenre, groupedGenres, isProcessing, stats, adviceList, 
+            isDarkMode, toastMessage, toastType, toastIcon, currentScoringProfile, 
+            analyzeText, getScoreColor, getScoreBg, rankColorClass, rankGradient, shareResult 
+        };
+    }
+}).mount('#app');
 </script>
 </body>
 </html>
