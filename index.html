@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <title>Narou Analyzer Ultra - Created by ペンギンの搾り汁</title>
+    <title>Narou Analyzer Ultra2 - Created by ペンギンの搾り汁</title>
     <meta name="description" content="Web小説執筆者向け高精度分析ツール。恋愛、ファンタジー、SFなどジャンル別に評価">
     
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
@@ -49,9 +49,9 @@
         <div class="flex-1 flex-col items-start">
             <h1 class="text-xl md:text-2xl font-black text-primary flex items-center gap-2 tracking-tighter cursor-pointer" onclick="window.scrollTo(0,0)">
                 <i class="ph-fill ph-pen-nib-straight"></i> 
-                <span>Narou Analyzer <span class="text-secondary">Ultra</span></span>
+                <span>Narou Analyzer <span class="text-secondary">Ultra2</span></span>
             </h1>
-            <div class="text-[10px] font-bold text-base-content/50 ml-8 -mt-1">Created by ペンギンの搾り汁 | 超高精度版</div>
+            <div class="text-[10px] font-bold text-base-content/50 ml-8 -mt-1">Created by ペンギンの搾り汁</div>
         </div>
         <div class="flex-none gap-2">
             <label class="swap swap-rotate btn btn-ghost btn-circle btn-sm">
@@ -112,7 +112,7 @@
             <div v-if="!stats" class="flex flex-col h-full min-h-[400px]">
                 <div class="flex-1 flex flex-col items-center justify-center text-base-content/30 border-2 border-dashed border-base-300 rounded-3xl p-8 mb-6">
                     <i class="ph-duotone ph-books text-7xl mb-4 animate-pulse text-secondary"></i>
-                    <p class="text-xl font-bold">超高精度ジャンル別解析 V5.0 Ultra</p>
+                    <p class="text-xl font-bold">高精度ジャンル別解析 Ultra2</p>
                     <p class="text-sm mt-2 opacity-70">恋愛・ファンタジー・文芸・SFなど全20カテゴリに対応</p>
                     <div class="mt-4 grid grid-cols-2 gap-2 text-xs opacity-60">
                         <div>✓ 文末パターン精密分析</div>
@@ -657,7 +657,7 @@ createApp({
 
         const shareResult = () => {
             if (!stats.value) return;
-            const text = `Narou Analyzer Pro V5.0 Ultra\nジャンル: ${currentScoringProfile.value.name}\nランク: ${stats.value.rank} (${stats.value.totalScore.toFixed(1)}点)\n#なろうアナライザー`;
+            const text = `Narou Analyzer Ultra2\nジャンル: ${currentScoringProfile.value.name}\nランク: ${stats.value.rank} (${stats.value.totalScore.toFixed(1)}点)\n#なろうアナライザー`;
             if (navigator.share) {
                 navigator.share({ title: 'なろうアナライザー結果', text });
             } else {
@@ -820,25 +820,27 @@ createApp({
             
             // 貧弱な語彙の使用回数をカウント
             let poorVocabCount = 0;
-            let poorVocabPenalty = 0;
             Object.entries(poorVocab).forEach(([word, count]) => {
                 if (count > 0) {
                     poorVocabCount += count;
-                    // 1回目から減点（各出現で10点減点）
-                    poorVocabPenalty += count * 10;
                 }
             });
             
-            // 繰り返し使用による減点を計算
-            let repetitionPenalty = 0;
+            // 貧弱な語彙の比率を計算（文章の長さに対する割合）
+            const poorVocabRatio = contentWords.length > 0 ? (poorVocabCount / contentWords.length) : 0;
+            
+            // 繰り返しの多い単語の数をカウント
+            let highRepeatCount = 0;
             Object.entries(wordFreq).forEach(([word, count]) => {
-                if (count >= 3) {
-                    repetitionPenalty += (count - 2) * 5;
-                }
                 if (count >= 5) {
-                    repetitionPenalty += (count - 4) * 5;
+                    highRepeatCount += (count - 4);
+                } else if (count >= 3) {
+                    highRepeatCount += (count - 2) * 0.5;
                 }
             });
+            
+            // 繰り返しの比率を計算
+            const repetitionRatio = contentWords.length > 0 ? (highRepeatCount / contentWords.length) : 0;
             
             // 語彙の多様性を計算
             const diversityRatio = contentWords.length > 0 ? (uniqueWords.size / contentWords.length) : 0;
@@ -853,9 +855,11 @@ createApp({
                 baseScore = diversityRatio * 100;
             }
             
-            // 総ペナルティを適用（貧弱な語彙 + 繰り返し）
+            // 比率ベースでペナルティを適用（最大減点は50点）
+            const poorVocabPenalty = Math.min(30, poorVocabRatio * 100);
+            const repetitionPenalty = Math.min(20, repetitionRatio * 100);
             const totalPenalty = poorVocabPenalty + repetitionPenalty;
-            const vocabularyRichness = Math.max(0, baseScore - Math.min(90, totalPenalty));
+            const vocabularyRichness = Math.max(0, baseScore - totalPenalty);
             
             const sensoryWords = text.match(/見|観|眺め|音|声|響|香|匂|味|触|感触|冷た|温か|熱|痛|柔らか|硬/g) || [];
             const sensoryDensity = (sensoryWords.length / sentences.length) * 100;
@@ -1093,7 +1097,7 @@ console.log("Sample Words:", positiveWords.slice(0, 5), negativeWords.slice(0, 5
                 comment,
                 tags,
                 mainMetrics: [
-                    { label: '文長', value: sentences.length, sub: `平均${avgLen.toFixed(1)}文字/文` },
+                    { label: '段落数', value: sentences.length, sub: `平均${avgLen.toFixed(1)}文字/文` },
                     { label: '会話比率', value: dialogRatio.toFixed(1) + '%', sub: `${dialogLines.length}個の会話` },
                     { label: '語彙豊富度', value: vocabularyRichness.toFixed(1) + '%', sub: `${uniqueWords.size}種の語彙` },
                     { label: '描写密度', value: totalDescDensity.toFixed(1), sub: '感覚+心理+動作+情景' }
