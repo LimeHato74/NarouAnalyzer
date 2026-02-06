@@ -754,8 +754,8 @@ const analyzeWithAI = async () => {
             try {
                 const profile = currentScoringProfile.value;
                 
-                // AI採点用の詳細プロンプト
-                const prompt = `あなたはプロの小説編集者です。以下の${profile.name}の本文を精読し、各項目を100点満点で採点してください。
+                // AI採点用の詳細プロンプト（採点部分）
+                const scoringPrompt = `あなたはプロの小説編集者です。以下の${profile.name}の本文を精読し、各項目を100点満点で採点してください。
 
 【本文】
 ${inputText.value.substring(0, 2000)}
@@ -787,29 +787,43 @@ ${inputText.value.substring(0, 2000)}
     "vocabulary": 79
   },
   "totalScore": 81.7,
-  "rank": "B+",
-  "impression": "本文の具体的な内容やシーン、キャラクター、展開について触れた読後感想を200文字程度で。技術的なアドバイスではなく、読者として感じたことを素直に書いてください。"
+  "rank": "B+"
 }
 
 ※ランクは S(95-100), A+(90-94), A(85-89), B+(80-84), B(75-79), C+(70-74), C(65-69), D(0-64)`;
 
-                const response = await fetch('https://falling-brook-e720.boleft704.workers.dev/', {
+                // 感想生成用のプロンプト（別途）
+                const impressionPrompt = `あなたは${profile.name}が好きな一般読者です。以下の小説を読んで、純粋な読後感想を書いてください。
+
+【本文】
+${inputText.value.substring(0, 2000)}
+
+【感想の書き方】
+- 文章の技術や構成には一切触れないでください
+- ストーリー、キャラクター、シーン、雰囲気、感情など「内容」についてのみ語ってください
+- 「〜が印象的だった」「〜のシーンで胸が熱くなった」「〜の心情が伝わってきた」のように具体的に
+- 200文字程度で、読者として素直に感じたことを書いてください
+
+悪い例：「文章のリズムが良く、描写が丁寧で読みやすかったです」
+良い例：「主人公が過去と向き合うシーンが切なく、涙が出そうになりました。仲間との絆の描写も温かくて、続きが気になります」`;
+
+                // まず採点を実行
+                const scoringResponse = await fetch('https://falling-brook-e720.boleft704.workers.dev/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: prompt })
+                    body: JSON.stringify({ prompt: scoringPrompt })
                 });
 
-                const data = await response.json();
+                const scoringData = await scoringResponse.json();
 
-                if (!response.ok) {
-                    throw new Error(data.error || `通信エラー: ${response.status}`);
+                if (!scoringResponse.ok) {
+                    throw new Error(scoringData.error || `通信エラー: ${scoringResponse.status}`);
                 }
 
-                // AIの結果をパース
+                // 採点結果をパース
                 let aiResult;
                 try {
-                    // JSON部分を抽出（前後の説明文を除去）
-                    const jsonMatch = data.result.match(/\{[\s\S]*\}/);
+                    const jsonMatch = scoringData.result.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
                         aiResult = JSON.parse(jsonMatch[0]);
                         
@@ -836,20 +850,30 @@ ${inputText.value.substring(0, 2000)}
                             nextTick(() => {
                                 renderCharts(stats.value);
                             });
-                            
-                            showToast('AIによる再採点が完了しました！', 'alert-success', 'ph-fill ph-check-circle');
                         }
-                        
-                        // impressionまたはcommentを表示
-                        aiComment.value = aiResult.impression || aiResult.comment || data.result;
-                    } else {
-                        // JSON形式でない場合はそのまま表示
-                        aiComment.value = data.result;
                     }
                 } catch (parseError) {
                     console.warn('JSON Parse Error:', parseError);
-                    aiComment.value = data.result;
                 }
+
+                // 次に感想を生成
+                aiComment.value = 'AIが読後感想を書いています...';
+                
+                const impressionResponse = await fetch('https://falling-brook-e720.boleft704.workers.dev/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: impressionPrompt })
+                });
+
+                const impressionData = await impressionResponse.json();
+
+                if (!impressionResponse.ok) {
+                    throw new Error(impressionData.error || `通信エラー: ${impressionResponse.status}`);
+                }
+
+                // 感想を表示
+                aiComment.value = impressionData.result;
+                showToast('AIによる採点と感想が完了しました！', 'alert-success', 'ph-fill ph-check-circle');
 
             } catch (error) {
                 console.error('AI Processing Error:', error);
