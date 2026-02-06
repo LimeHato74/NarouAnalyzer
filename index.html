@@ -648,25 +648,49 @@
                     // 1-6. リズムスコア統合
                     let rhythmScore = 100;
                     
-                    // 文長適合性
-                    const lenDiff = Math.abs(avgLen - params.targetLen);
-                    if (lenDiff > 20) rhythmScore -= (lenDiff - 15) * 1.5;
-                    
-                    // 漢字率
-                    if (genreKey === 'fairytale' && kanjiRatio > 20) rhythmScore -= (kanjiRatio - 20) * 2;
-                    else if (kanjiRatio > 55) rhythmScore -= (kanjiRatio - 55) * 1.5;
-                    else if (kanjiRatio < 10 && genreKey !== 'fairytale') rhythmScore -= (10 - kanjiRatio) * 2;
-                    
-                    // 文末パターン
-                    rhythmScore = (rhythmScore * 0.5) + (repetitionScore * 0.3) + (endingPatternScore * 0.2);
-                    
-                    // 段落構成
-                    if (wallCount > 0 && genreKey !== 'poetry' && genreKey !== 'essay') {
-                        rhythmScore -= Math.min(15, wallCount * 3);
+                    if (genreKey === 'poetry') {
+                        // 詩専用の評価基準
+                        // 行の長さの統一性（詩は短い行が多いべき）
+                        const lineVariance = lines.map(l => l.trim().length).filter(l => l > 0);
+                        const avgLineLen = lineVariance.reduce((a,b) => a+b, 0) / (lineVariance.length || 1);
+                        const lineStdDev = Math.sqrt(lineVariance.reduce((a,b) => a + Math.pow(b - avgLineLen, 2), 0) / (lineVariance.length || 1));
+                        
+                        // 詩は短い行が好ましい
+                        if (avgLineLen > 40) rhythmScore -= (avgLineLen - 40) * 1.5;
+                        
+                        // 行長の変化が激しすぎるのは減点（自由詩でもある程度の統一感が必要）
+                        if (lineStdDev > 30) rhythmScore -= (lineStdDev - 30) * 0.5;
+                        
+                        // 空行が多すぎる（構成が薄い）
+                        const emptyLineRatio = lines.filter(l => l.trim() === '').length / lines.length;
+                        if (emptyLineRatio > 0.5) rhythmScore -= 20;
+                        
+                        // 文末の音韻的な統一性（簡易チェック）
+                        const poemEndings = cleanSentences.map(s => s.slice(-2)).filter(e => e.length === 2);
+                        const uniqueEndings = new Set(poemEndings);
+                        const endingVariety = uniqueEndings.size / (poemEndings.length || 1);
+                        // 詩は文末が多様すぎても統一感がなくなる
+                        if (endingVariety > 0.8) rhythmScore -= 15;
+                        
+                    } else {
+                        // 通常ジャンルの評価
+                        // 文長適合性
+                        const lenDiff = Math.abs(avgLen - params.targetLen);
+                        if (lenDiff > 20) rhythmScore -= (lenDiff - 15) * 1.5;
+                        
+                        // 漢字率
+                        if (genreKey === 'fairytale' && kanjiRatio > 20) rhythmScore -= (kanjiRatio - 20) * 2;
+                        else if (kanjiRatio > 55) rhythmScore -= (kanjiRatio - 55) * 1.5;
+                        else if (kanjiRatio < 10 && genreKey !== 'fairytale') rhythmScore -= (10 - kanjiRatio) * 2;
+                        
+                        // 文末パターン
+                        rhythmScore = (rhythmScore * 0.5) + (repetitionScore * 0.3) + (endingPatternScore * 0.2);
+                        
+                        // 段落構成
+                        if (wallCount > 0 && genreKey !== 'essay') {
+                            rhythmScore -= Math.min(15, wallCount * 3);
+                        }
                     }
-                    
-                    // 詩の特別処理
-                    if (genreKey === 'poetry') rhythmScore = 100 - (wallCount > 10 ? 10 : 0);
                     
                     rhythmScore = Math.max(0, Math.min(100, rhythmScore));
 
@@ -741,7 +765,26 @@
                     else if (psychologicalDepth < 0.2) psychDepthLabel = 'shallow';
                     
                     // 2-6. 没入感スコア統合
-                    let immScore = (dialogScore * 0.35) + (senseScore * 0.25) + (viewpointScore * 0.2) + (descriptiveScore * 0.1) + (psychScore * 0.1);
+                    let immScore = 0;
+                    
+                    if (genreKey === 'poetry') {
+                        // 詩は会話や五感ではなく、比喩表現や抽象語彙で評価
+                        const poeticWords = ['風','空','心','愛','夢','光','影','花','時','魂','星','月','海','涙','声','静寂','闇','想','記憶','永遠'];
+                        let poeticCount = 0;
+                        poeticWords.forEach(w => poeticCount += (text.match(new RegExp(w, 'g')) || []).length);
+                        
+                        const poeticDensity = (poeticCount / (text.length / 100));
+                        immScore = Math.min(100, poeticDensity * 15);
+                        
+                        // 詩は短いので、ある程度の長さがないと薄い
+                        if (text.length < 50) immScore *= 0.5;
+                        if (text.length > 100) immScore = Math.min(100, immScore * 1.2);
+                        
+                    } else {
+                        // 通常ジャンルの評価
+                        immScore = (dialogScore * 0.35) + (senseScore * 0.25) + (viewpointScore * 0.2) + (descriptiveScore * 0.1) + (psychScore * 0.1);
+                    }
+                    
                     immScore = Math.max(0, Math.min(100, immScore));
 
                     // ==================== 3. 構成品質スコア (大幅強化) ====================
@@ -771,10 +814,28 @@
                     else if (redundancyRatio > 0.15) redundancyLabel = 'noticeable';
                     
                     // 3-3. 構成品質スコア統合
-                    let grammarScore = (repetitionScore * 0.5) + (conjunctionScore * 0.25) + (redundancyScore * 0.25);
-                    if (wallCount > 0 && genreKey !== 'poetry' && genreKey !== 'essay') {
-                        grammarScore -= Math.min(10, wallCount * 2);
+                    let grammarScore = 0;
+                    
+                    if (genreKey === 'poetry') {
+                        // 詩は文法の厳密性を求めない（むしろ破格が許される）
+                        // 音数的なリズムを評価
+                        const avgLineLength = lines.filter(l => l.trim().length > 0).map(l => l.trim().length);
+                        const hasConsistentRhythm = avgLineLength.length > 0 && 
+                            avgLineLength.filter(l => Math.abs(l - avgLineLength[0]) < 5).length > avgLineLength.length * 0.6;
+                        
+                        grammarScore = hasConsistentRhythm ? 70 : 50;
+                        
+                        // 極端に短すぎる（手抜き）
+                        if (text.length < 30) grammarScore = 30;
+                        
+                    } else {
+                        // 通常ジャンルの評価
+                        grammarScore = (repetitionScore * 0.5) + (conjunctionScore * 0.25) + (redundancyScore * 0.25);
+                        if (wallCount > 0 && genreKey !== 'essay') {
+                            grammarScore -= Math.min(10, wallCount * 2);
+                        }
                     }
+                    
                     grammarScore = Math.max(0, Math.min(100, grammarScore));
 
                     // ==================== 4. 物語強度スコア (大幅強化) ====================
@@ -822,24 +883,55 @@
                     const keywordDensity = foundKeywords.size / (params.keywords?.length || 1);
                     
                     // 4-4. 物語強度スコア統合
-                    let storyScore = 50;
-                    storyScore += emotionRange * 3.5;
-                    storyScore += emotionVariance * 10;
-                    if (hasClimax) storyScore += 10;
-                    storyScore += Math.min(25, foundKeywords.size * 6);
-                    storyScore += keywordDensity * 20;
+                    let storyScore = 0;
+                    
+                    if (genreKey === 'poetry') {
+                        // 詩はストーリーではなくイメージの豊かさで評価
+                        const imageWords = ['見','色','光','影','風','音','香','味','感','触'];
+                        let imageCount = 0;
+                        imageWords.forEach(w => imageCount += (text.match(new RegExp(w, 'g')) || []).length);
+                        
+                        const imageDensity = (imageCount / (text.length / 100));
+                        storyScore = Math.min(100, imageDensity * 20);
+                        
+                        // 感情の幅は評価するが、ストーリー的な起伏ではない
+                        storyScore += Math.min(20, emotionRange * 2);
+                        
+                        // 詩的キーワードの使用
+                        storyScore += Math.min(30, foundKeywords.size * 8);
+                        
+                    } else {
+                        // 通常ジャンルの評価
+                        storyScore = 50;
+                        storyScore += emotionRange * 3.5;
+                        storyScore += emotionVariance * 10;
+                        if (hasClimax) storyScore += 10;
+                        storyScore += Math.min(25, foundKeywords.size * 6);
+                        storyScore += keywordDensity * 20;
+                    }
+                    
                     storyScore = Math.max(0, Math.min(100, storyScore));
 
                     // ==================== 5. 総合スコア計算 ====================
                     const w = params.weights;
                     let total = ((rhythmScore * w.rhythm) + (immScore * w.immersion) + (grammarScore * w.grammar) + (storyScore * w.story)) / 100;
                     
-                    // ボーナス
-                    if (foundKeywords.size >= 4) total += 4;
-                    if (wallCount === 0 && genreKey !== 'poetry') total += 2;
-                    if (viewpointConsistency === 'consistent') total += 2;
-                    if (redundancyLabel === 'minimal') total += 2;
-                    if (rhythmVariation === 'excellent') total += 3;
+                    // ボーナス（詩以外）
+                    if (genreKey !== 'poetry') {
+                        if (foundKeywords.size >= 4) total += 4;
+                        if (wallCount === 0) total += 2;
+                        if (viewpointConsistency === 'consistent') total += 2;
+                        if (redundancyLabel === 'minimal') total += 2;
+                        if (rhythmVariation === 'excellent') total += 3;
+                    } else {
+                        // 詩専用ボーナス
+                        if (foundKeywords.size >= 3) total += 5;
+                        // 適度な長さ（100-300文字くらいが詩として適切）
+                        if (text.length >= 100 && text.length <= 300) total += 5;
+                        // 行数が適度（5-20行程度）
+                        const validLines = lines.filter(l => l.trim().length > 0).length;
+                        if (validLines >= 5 && validLines <= 20) total += 3;
+                    }
                     
                     total = Math.max(0, Math.min(100, total));
 
