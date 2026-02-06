@@ -9,6 +9,18 @@
     
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet" type="text/css" />
+    <script>
+        // Tailwind CDN警告を非表示
+        (function() {
+            const originalWarn = console.warn;
+            console.warn = function(...args) {
+                if (args[0] && args[0].includes && args[0].includes('cdn.tailwindcss.com')) {
+                    return;
+                }
+                originalWarn.apply(console, args);
+            };
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -99,6 +111,18 @@
                         <span class="text-xs badge" :class="inputText.length > 2000 ? 'badge-success' : 'badge-ghost'">{{ inputText.length.toLocaleString() }} chars</span>
                     </div>
                     <textarea v-model="inputText" class="textarea textarea-bordered w-full h-[40vh] lg:h-[60vh] font-mono-jp text-base leading-relaxed resize-none focus:outline-none focus:border-secondary transition-all" placeholder="ここに小説の本文を貼り付けてください。&#10;&#10;V5.0 Ultraでは、文末パターン、視点の一貫性、描写密度、接続詞の適切性、語彙の豊かさなど、数十項目の詳細な分析を行います。"></textarea>
+                    
+                    <div class="form-control mt-3">
+                        <label class="label cursor-pointer justify-start gap-3">
+                            <input type="checkbox" v-model="isAIMode" class="toggle toggle-primary" />
+                            <span class="label-text font-bold flex items-center gap-2">
+                                <i class="ph-fill ph-robot text-lg"></i>
+                                AIモード（Hugging Face API）
+                            </span>
+                        </label>
+                        <p class="text-xs text-base-content/60 ml-14">AIが本文を読んで採点し、読後感想を書きます</p>
+                    </div>
+                    
                     <button @click="analyzeText" class="btn btn-secondary btn-lg w-full mt-4 gap-2" :disabled="inputText.length < 100">
                         <i class="ph-bold ph-magnifying-glass text-xl"></i>
                         <span class="font-bold">分析開始</span>
@@ -137,7 +161,10 @@
                     <div class="card-body p-6 md:p-8">
                         <div class="flex flex-col md:flex-row gap-8 items-center">
                             <div class="text-center min-w-[160px] relative">
-                                <div class="text-xs text-base-content/60 font-bold mb-1 uppercase tracking-widest">Genre Rank</div>
+                                <div class="text-xs text-base-content/60 font-bold mb-1 uppercase tracking-widest flex items-center justify-center gap-2">
+                                    Genre Rank
+                                    <span v-if="isAIMode && !isAIProcessing && aiComment" class="badge badge-sm badge-secondary animate-pulse">AI採点</span>
+                                </div>
                                 <div class="text-9xl font-black leading-none bg-clip-text text-transparent bg-gradient-to-br filter drop-shadow-sm" :class="rankGradient" style="font-family: 'Zen Maru Gothic';">{{ stats.rank }}</div>
                                 <div class="text-3xl font-bold mt-[-10px] text-base-content/50">{{ stats.totalScore.toFixed(1) }}<span class="text-sm">/100</span></div>
                             </div>
@@ -149,6 +176,20 @@
                                     </h3>
                                     <p class="text-sm md:text-base leading-7 whitespace-pre-line text-base-content">{{ stats.comment }}</p>
                                 </div>
+                                
+                                <!-- AI感想表示 -->
+                                <div v-if="isAIMode" class="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-5 rounded-2xl border-2 border-purple-200 dark:border-purple-700">
+                                    <h3 class="font-bold text-sm mb-3 flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                                        <i class="ph-fill ph-heart"></i> AI読後感想
+                                    </h3>
+                                    <div v-if="isAIProcessing" class="flex items-center gap-3 text-purple-600 dark:text-purple-400">
+                                        <span class="loading loading-spinner loading-sm"></span>
+                                        <span class="text-sm">{{ aiComment }}</span>
+                                    </div>
+                                    <p v-else-if="aiComment" class="text-sm md:text-base leading-7 text-base-content italic">「{{ aiComment }}」</p>
+                                    <p v-else class="text-sm text-base-content/60 italic">AI分析を待機中...</p>
+                                </div>
+                                
                                 <div class="flex flex-wrap items-center justify-between gap-4">
                                     <div class="flex flex-wrap gap-2">
                                         <div v-for="tag in stats.tags" :key="tag" class="badge badge-outline badge-lg text-xs py-3 px-4 bg-base-100">
@@ -295,6 +336,9 @@ createApp({
         const toastMessage = ref('');
         const toastType = ref('');
         const toastIcon = ref('');
+        const isAIMode = ref(false);
+        const aiComment = ref('');
+        const isAIProcessing = ref(false);
 
         let radarChart = null;
         let sentimentChart = null;
@@ -688,11 +732,145 @@ createApp({
                 nextTick(() => {
                     renderCharts(result);
                     document.getElementById('results-area')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    
+                    // AIモードがオンの場合はAI分析も実行
+                    if (isAIMode.value) {
+                        analyzeWithAI();
+                    }
                 });
                 isProcessing.value = false;
             }, 300);
         };
 
+const analyzeWithAI = async () => {
+            if (!stats.value) {
+                showToast('先に基本分析を実行してください', 'alert-warning', 'ph-fill ph-warning');
+                return;
+            }
+
+            isAIProcessing.value = true;
+            aiComment.value = 'AIが本文を精読して採点中...（20〜30秒かかります）';
+
+            try {
+                const profile = currentScoringProfile.value;
+                
+                // AI採点用の詳細プロンプト
+                const prompt = `あなたはプロの小説編集者です。以下の${profile.name}の本文を精読し、各項目を100点満点で採点してください。
+
+【本文】
+${inputText.value.substring(0, 2000)}
+
+【採点項目】※${profile.name}の基準で評価
+1. 描写力（五感・心理描写の豊かさ）: 0-100点
+2. 会話の自然さ（${profile.minDialog}%前後が理想）: 0-100点
+3. 感情表現（ポジティブ/ネガティブのバランス）: 0-100点
+4. 文末のバリエーション: 0-100点
+5. 視点の一貫性: 0-100点
+6. 文章のリズム（長短の変化）: 0-100点
+7. 冗長性の少なさ: 0-100点
+8. 接続詞の適切さ: 0-100点
+9. ジャンル適合度（${profile.name}らしさ）: 0-100点
+10. 語彙の豊かさ: 0-100点
+
+【出力形式】必ず以下のJSON形式で出力してください。
+{
+  "scores": {
+    "description": 85,
+    "dialogue": 78,
+    "sentiment": 82,
+    "ending": 75,
+    "viewpoint": 90,
+    "tempo": 80,
+    "redundancy": 88,
+    "connector": 76,
+    "keyword": 84,
+    "vocabulary": 79
+  },
+  "totalScore": 81.7,
+  "rank": "B+",
+  "impression": "本文の具体的な内容やシーン、キャラクター、展開について触れた読後感想を200文字程度で。技術的なアドバイスではなく、読者として感じたことを素直に書いてください。"
+}
+
+※ランクは S(95-100), A+(90-94), A(85-89), B+(80-84), B(75-79), C+(70-74), C(65-69), D(0-64)`;
+
+                const response = await fetch('https://falling-brook-e720.boleft704.workers.dev/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || `通信エラー: ${response.status}`);
+                }
+
+                // AIの結果をパース
+                let aiResult;
+                try {
+                    // JSON部分を抽出（前後の説明文を除去）
+                    const jsonMatch = data.result.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                        aiResult = JSON.parse(jsonMatch[0]);
+                        
+                        // AIの採点結果でstatsを更新
+                        if (aiResult.scores && aiResult.totalScore) {
+                            stats.value.totalScore = aiResult.totalScore;
+                            stats.value.rank = aiResult.rank || getRank(aiResult.totalScore);
+                            
+                            // レーダーチャートのデータを更新
+                            stats.value.radarData = [
+                                { label: '描写力', score: aiResult.scores.description || 50 },
+                                { label: '会話', score: aiResult.scores.dialogue || 50 },
+                                { label: '感情表現', score: aiResult.scores.sentiment || 50 },
+                                { label: '文末', score: aiResult.scores.ending || 50 },
+                                { label: '視点', score: aiResult.scores.viewpoint || 50 },
+                                { label: 'リズム', score: aiResult.scores.tempo || 50 },
+                                { label: '冗長性', score: aiResult.scores.redundancy || 50 },
+                                { label: '接続詞', score: aiResult.scores.connector || 50 },
+                                { label: 'ジャンル', score: aiResult.scores.keyword || 50 },
+                                { label: '語彙', score: aiResult.scores.vocabulary || 50 }
+                            ];
+                            
+                            // チャートを再描画
+                            nextTick(() => {
+                                renderCharts(stats.value);
+                            });
+                            
+                            showToast('AIによる再採点が完了しました！', 'alert-success', 'ph-fill ph-check-circle');
+                        }
+                        
+                        // impressionまたはcommentを表示
+                        aiComment.value = aiResult.impression || aiResult.comment || data.result;
+                    } else {
+                        // JSON形式でない場合はそのまま表示
+                        aiComment.value = data.result;
+                    }
+                } catch (parseError) {
+                    console.warn('JSON Parse Error:', parseError);
+                    aiComment.value = data.result;
+                }
+
+            } catch (error) {
+                console.error('AI Processing Error:', error);
+                showToast(error.message, 'alert-error', 'ph-fill ph-x-circle');
+                aiComment.value = '分析に失敗しました。時間をおいて再度お試しください。';
+            } finally {
+                isAIProcessing.value = false;
+            }
+        };
+        
+        // ランク判定関数
+        const getRank = (score) => {
+            if (score >= 95) return 'S';
+            if (score >= 90) return 'A+';
+            if (score >= 85) return 'A';
+            if (score >= 80) return 'B+';
+            if (score >= 75) return 'B';
+            if (score >= 70) return 'C+';
+            if (score >= 65) return 'C';
+            return 'D';
+        };
         const performAnalysis = (text) => {
             const profile = currentScoringProfile.value;
             
@@ -1639,7 +1817,8 @@ console.log("Sample Words:", positiveWords.slice(0, 5), negativeWords.slice(0, 5
         return { 
             inputText, selectedGenre, groupedGenres, isProcessing, stats, adviceList, 
             isDarkMode, toastMessage, toastType, toastIcon, currentScoringProfile, 
-            analyzeText, getScoreColor, getScoreBg, rankColorClass, rankGradient, shareResult 
+            isAIMode, aiComment, isAIProcessing,
+            analyzeText, analyzeWithAI, getScoreColor, getScoreBg, rankColorClass, rankGradient, shareResult 
         };
     }
 }).mount('#app');
