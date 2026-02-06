@@ -861,17 +861,109 @@ createApp({
             const totalPenalty = poorVocabPenalty + repetitionPenalty;
             const vocabularyRichness = Math.max(0, baseScore - totalPenalty);
             
-            const sensoryWords = text.match(/見|観|眺め|音|声|響|香|匂|味|触|感触|冷た|温か|熱|痛|柔らか|硬/g) || [];
-            const sensoryDensity = (sensoryWords.length / sentences.length) * 100;
-            
-            const psychWords = text.match(/思|考|感じ|気持ち|心|胸|不安|恐怖|喜|悲|怒|驚|期待|願|望|迷|悩/g) || [];
-            const psychDensity = (psychWords.length / sentences.length) * 100;
-            
-            const actionWords = text.match(/歩|走|跳|座|立|見|聞|話|言|叫|笑|泣|握|掴|投|取|開|閉|動|止/g) || [];
-            const actionDensity = (actionWords.length / sentences.length) * 100;
-            
-            const sceneWords = text.match(/空|雲|太陽|月|星|風|雨|雪|木|花|山|海|川|街|建物|部屋|窓|光|影|色/g) || [];
-            const sceneDensity = (sceneWords.length / sentences.length) * 100;
+// ==========================================
+// 1. 五感・感覚表現 (Sensory)
+// ==========================================
+// 視覚、聴覚、嗅覚、味覚、触覚、温度、身体感覚など
+const sensoryList = [
+    // 視覚
+    '見', '観', '眺', '視界', '光景', '眼', '瞳', '目', '眩', '鮮やか', '色', '彩', 
+    '薄暗', '闇', '影', '輪郭', 'ぼんやり', '霞', '透明', '煌', '輝', '映',
+    // 聴覚
+    '音', '声', '響', '聞', '聴', '耳', '囁', '叫', '喚', '悲鳴', '轟音', '静寂', 
+    'ざわめき', '喧騒', 'ノイズ', '足音', '物音', '沈黙',
+    // 嗅覚
+    '香', '匂', '臭', '鼻', '芳', '薫', '嗅', '悪臭', '異臭', '残り香', '鼻をつく',
+    // 味覚
+    '味', '甘', '辛', '苦', '酸', '渋', '旨', '舌', '噛', '喉越', '不味', '美味',
+    // 触覚・温度・身体感覚
+    '触', '撫', '感触', '手触', '肌', '皮膚', '指先', '冷', '温', '熱', '寒', '暑', 'ぬくもり',
+    '痛', '激痛', '鈍痛', '痒', '痺', '震', '鳥肌', '柔ら', '硬', '重', '軽', '湿', '乾',
+    'ざらざら', 'つるつる', 'ふわふわ', 'ベタベタ', 'ひんやり'
+];
+
+// ==========================================
+// 2. 心理・内面描写 (Psychological)
+// ==========================================
+// 思考、感情、葛藤、推測、回想など
+const psychList = [
+    // 思考・意識
+    '思', '考', '感', '気', '心', '胸', '脳裏', '意識', '記憶', '回想', '想像', '妄想', 
+    '推測', '予感', '理解', '納得', '把握', '認識', '自覚', '迷', '悩', '疑', '決意',
+    // 感情の動き
+    '不安', '恐怖', '喜', '悲', '怒', '驚', '哀', '憂', '憤', '憎', '愛', '恋', '情',
+    '期待', '願', '望', '欲', '焦', '悔', '嫉妬', '羨', '安堵', '絶望', '孤独', '虚無',
+    // 内面の声・状態
+    '衝動', '本能', '理性', '葛藤', '動揺', '混乱', '放心', '呆然', '意地', 'プライド'
+];
+
+// ==========================================
+// 3. 動作・アクション (Action)
+// ==========================================
+// 体の動き、移動、戦闘、日常動作など
+const actionList = [
+    // 移動・足
+    '歩', '走', '駆', '跳', '飛', '逃', '追', '進', '退', '戻', '行', '来', '立', '座', 
+    '這', '転', '倒', '着地', '徘徊', '彷徨', 'ダッシュ',
+    // 手・腕・操作
+    '握', '掴', '持', '取', '投', '打', '殴', '叩', '撫', '押', '引', '開', '閉', 
+    '振', '指差', '触', '拾', '捨て', '抱', '背負',
+    // 口・顔・表情動作
+    '言', '話', '語', '叫', '呼', '笑', '泣', '食', '飲', '吐', '噛', '舐', '睨', 
+    '頷', '首を振', '見回', '瞬き', '凝視',
+    // 戦闘・激しい動作
+    '蹴', '斬', '刺', '撃', '射', '防', '避', '殺', '壊', '砕', '裂', '爆発', '衝突'
+];
+
+// ==========================================
+// 4. 情景・世界観 (Scene)
+// ==========================================
+// 自然、天候、場所、時間、光と影など
+const sceneList = [
+    // 天体・天候
+    '空', '雲', '太陽', '月', '星', '風', '雨', '雪', '雷', '嵐', '霧', '霞', '虹', 
+    '晴', '曇', '気候', '気温', '季節', '陽射し', '夕暮', '朝', '昼', '夜', '深夜',
+    // 自然・地形
+    '木', '林', '森', '花', '草', '葉', '山', '海', '川', '湖', '水', '土', '砂', '岩', 
+    '崖', '地平線', '水平線', '洞窟', '荒野',
+    // 人工物・場所
+    '街', '都市', '建物', '部屋', '窓', '壁', '床', '天井', '扉', 'ドア', '道', '路地', 
+    '広場', '家', '店', '城', '廃墟', 'ガラス', 'コンクリート',
+    // 雰囲気・状態
+    '光', '影', '色', '静寂', '喧騒', '雰囲気', '空気感', '匂い', '景色', '風景'
+];
+
+// ==========================================
+// 評価実行関数（修正版）
+// ==========================================
+// リストを「|」で結合して正規表現オブジェクトを作成
+const createRegex = (list) => new RegExp(list.join('|'), 'g');
+
+const sensoryRegex = createRegex(sensoryList);
+const psychRegex = createRegex(psychList);
+const actionRegex = createRegex(actionList);
+const sceneRegex = createRegex(sceneList);
+
+// マッチング数をカウント（null対策で || [] を使用）
+const sensoryCount = (text.match(sensoryRegex) || []).length;
+const psychCount = (text.match(psychRegex) || []).length;
+const actionCount = (text.match(actionRegex) || []).length;
+const sceneCount = (text.match(sceneRegex) || []).length;
+
+// 文の数（sentences.length）が0の場合のゼロ除算対策を含める
+const sentenceCount = sentences.length > 0 ? sentences.length : 1;
+
+// 密度計算（%）
+const sensoryDensity = (sensoryCount / sentenceCount) * 100;
+const psychDensity = (psychCount / sentenceCount) * 100;
+const actionDensity = (actionCount / sentenceCount) * 100;
+const sceneDensity = (sceneCount / sentenceCount) * 100;
+
+// 結果確認用ログ
+console.log(`五感度: ${sensoryDensity.toFixed(1)}%`);
+console.log(`心理度: ${psychDensity.toFixed(1)}%`);
+console.log(`アクション度: ${actionDensity.toFixed(1)}%`);
+console.log(`情景度: ${sceneDensity.toFixed(1)}%`);
             
             const totalDescDensity = sensoryDensity + psychDensity + actionDensity + sceneDensity;
             
