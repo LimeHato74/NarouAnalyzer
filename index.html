@@ -599,13 +599,15 @@
 
             <div v-else class="flex flex-col space-y-4 sm:space-y-6 animate-fade-in-up">
                 
-                <div class="card bg-base-100 shadow-xl relative z-10 mobile-order-1" style="overflow: clip;">
+                <div class="card bg-base-100 shadow-xl relative mobile-order-1" style="overflow: visible;">
                     <div class="absolute top-0 left-0 w-2 sm:w-3 h-full" :class="rankColorClass"></div>
-                    <div class="absolute -right-6 sm:-right-10 -top-6 sm:-top-10 opacity-5 rotate-12 pointer-events-none" style="clip-path: inset(0 0 0 0);">
-                        <i class="ph-fill ph-medal text-6xl sm:text-7xl md:text-9xl"></i>
+                    <div class="absolute inset-0 pointer-events-none" style="overflow: clip;">
+                        <div class="absolute -right-6 sm:-right-10 -top-6 sm:-top-10 opacity-5 rotate-12">
+                            <i class="ph-fill ph-medal text-6xl sm:text-7xl md:text-9xl"></i>
+                        </div>
                     </div>
                     
-                    <div class="card-body p-3 sm:p-4 md:p-6 lg:p-8">
+                    <div class="card-body p-3 sm:p-4 md:p-6 lg:p-8 relative z-10">
                         <div class="flex flex-col md:flex-row gap-4 sm:gap-6 md:gap-8 items-center">
                             <div class="text-center min-w-[120px] sm:min-w-[140px] md:min-w-[160px] relative z-0">
                                 <div class="text-[10px] sm:text-xs text-base-content/60 font-bold mb-1 uppercase tracking-widest flex items-center justify-center gap-1 sm:gap-2">
