@@ -113,16 +113,22 @@
             touch-action: manipulation;
         }
         
-        /* タッチターゲットサイズの確保（最小44x44px） */
+        /* タッチターゲットサイズの確保（最小48x48px） */
         .btn, button, a {
-            min-height: 44px;
-            min-width: 44px;
+            min-height: 48px;
+            min-width: 48px;
         }
         
         @media (max-width: 640px) {
             .btn-sm {
-                min-height: 40px;
-                min-width: 40px;
+                min-height: 44px;
+                min-width: 44px;
+                font-size: 0.95rem;
+            }
+            
+            .btn {
+                padding: 0.75rem 1.25rem;
+                font-size: 1rem;
             }
         }
         
@@ -138,10 +144,12 @@
         
         /* ===== RESPONSIVE TYPOGRAPHY ===== */
         @media (max-width: 640px) {
-            html { font-size: 14px; }
-            h1 { font-size: 1.25rem !important; }
-            h2 { font-size: 1.1rem !important; }
-            h3 { font-size: 1rem !important; }
+            html { font-size: 16px; }
+            h1 { font-size: 1.5rem !important; }
+            h2 { font-size: 1.25rem !important; }
+            h3 { font-size: 1.1rem !important; }
+            body { font-size: 1rem; }
+            p, li, span { font-size: 1rem; }
         }
         
         @media (min-width: 641px) and (max-width: 1024px) {
@@ -155,13 +163,49 @@
         /* ===== CARD & PANEL SPACING ===== */
         @media (max-width: 640px) {
             .card-body {
-                padding: 1rem !important;
+                padding: 1.5rem !important;
+            }
+            
+            .space-y-4 > * + * {
+                margin-top: 1.25rem !important;
+            }
+            
+            .gap-4 {
+                gap: 1.25rem !important;
             }
         }
         
         @media (min-width: 641px) and (max-width: 1024px) {
             .card-body {
                 padding: 1.25rem !important;
+            }
+        }
+        
+        /* ===== MOBILE STAT CARDS ===== */
+        @media (max-width: 640px) {
+            .stat-value {
+                font-size: 2rem !important;
+            }
+            
+            .stat-title {
+                font-size: 0.95rem !important;
+            }
+            
+            .badge {
+                font-size: 0.875rem;
+                padding: 0.5rem 0.875rem;
+            }
+            
+            .text-xs {
+                font-size: 0.875rem !important;
+            }
+            
+            .text-sm {
+                font-size: 0.95rem !important;
+            }
+            
+            .text-lg {
+                font-size: 1.15rem !important;
             }
         }
         
@@ -200,8 +244,10 @@
         
         @media (max-width: 640px) {
             textarea {
-                font-size: 0.9rem;
-                line-height: 1.6;
+                font-size: 1rem;
+                line-height: 1.7;
+                padding: 1rem;
+                min-height: 200px;
             }
         }
         
@@ -213,7 +259,15 @@
         
         @media (max-width: 640px) {
             select {
-                font-size: 0.95rem;
+                font-size: 1rem;
+                padding: 0.875rem 2.5rem 0.875rem 1rem;
+                min-height: 48px;
+            }
+            
+            input[type="text"], input[type="number"] {
+                font-size: 1rem;
+                padding: 0.875rem 1rem;
+                min-height: 48px;
             }
         }
         
@@ -242,7 +296,16 @@
         /* ===== GRID IMPROVEMENTS ===== */
         @media (max-width: 640px) {
             .grid {
-                gap: 0.75rem !important;
+                gap: 1rem !important;
+            }
+            .gap-3, .gap-4 {
+                gap: 1rem !important;
+            }
+            .p-4 {
+                padding: 1.25rem !important;
+            }
+            .p-6 {
+                padding: 1.5rem !important;
             }
         }
         
@@ -259,6 +322,14 @@
                 max-width: calc(100vw - 2rem);
                 max-height: calc(100vh - 4rem);
                 margin: 1rem;
+                padding: 1.5rem;
+            }
+            .modal-box h3 {
+                font-size: 1.25rem !important;
+            }
+            .modal-box p {
+                font-size: 1rem !important;
+                line-height: 1.7;
             }
         }
         
@@ -282,6 +353,19 @@
             
             .w-full-mobile {
                 width: 100% !important;
+            }
+        }
+        
+        /* ===== STATS DISPLAY ===== */
+        @media (max-width: 640px) {
+            .stat-value {
+                font-size: 1.75rem !important;
+            }
+            .stat-title {
+                font-size: 0.95rem !important;
+            }
+            .stat-desc {
+                font-size: 0.875rem !important;
             }
         }
         
