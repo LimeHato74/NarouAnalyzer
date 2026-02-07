@@ -231,7 +231,7 @@
                                             結果を共有
                                             <i class="ph-bold ph-caret-down"></i>
                                         </label>
-                                        <ul tabindex="0" class="dropdown-content menu p-2 shadow-2xl bg-base-100 rounded-box w-60 mt-2 border-2 border-base-300" style="z-index: 1000 !important; position: absolute;">
+                                        <ul tabindex="0" class="dropdown-content menu p-2 shadow-2xl bg-base-100 rounded-box w-56 sm:w-60 mt-2 border-2 border-base-300 right-0" style="z-index: 1000 !important; position: absolute;">
                                             <li>
                                                 <a @click="shareToXDirect" class="flex items-center gap-3 py-3">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -1019,7 +1019,7 @@ createApp({
         // テキストをコピー
         const copyResultText = () => {
             if (!stats.value) return;
-            const text = `私の小説戦闘力は${stats.value.rank}ランク！（${stats.value.totalScore.toFixed(1)}点）\nジャンル: ${currentScoringProfile.value.name}\n\n#なろうアナライザー\nhttps://narou-analyzer.example.com`;
+            const text = `私の小説戦闘力は${stats.value.rank}ランク！（${stats.value.totalScore.toFixed(1)}点）\nジャンル: ${currentScoringProfile.value.name}\n\n#なろうアナライザー\nhttps://limehato74.github.io/NarouAnalyzer/`;
             navigator.clipboard.writeText(text);
             showToast('テキストをクリップボードにコピーしました！', 'alert-success', 'ph-fill ph-check-circle');
         };
@@ -1049,7 +1049,7 @@ createApp({
         // LINEで共有
         const shareToLine = () => {
             if (!stats.value) return;
-            const text = `私の小説戦闘力は${stats.value.rank}ランク！（${stats.value.totalScore.toFixed(1)}点）\nジャンル: ${currentScoringProfile.value.name}\n\n#なろうアナライザー`;
+            const text = `私の小説戦闘力は${stats.value.rank}ランク！（${stats.value.totalScore.toFixed(1)}点）\nジャンル: ${currentScoringProfile.value.name}\n\n#なろうアナライザー\nhttps://limehato74.github.io/NarouAnalyzer/`;
             const url = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`;
             window.open(url, '_blank');
         };
@@ -1057,7 +1057,7 @@ createApp({
         // Xに直接投稿（テキストのみ）
         const shareToXDirect = () => {
             if (!stats.value) return;
-            const text = `私の小説戦闘力は${stats.value.rank}ランク！（${stats.value.totalScore.toFixed(1)}点）\nジャンル: ${currentScoringProfile.value.name}\n\n#なろうアナライザー`;
+            const text = `私の小説戦闘力は${stats.value.rank}ランク！（${stats.value.totalScore.toFixed(1)}点）\nジャンル: ${currentScoringProfile.value.name}\n\n#なろうアナライザー\nhttps://limehato74.github.io/NarouAnalyzer/`;
             const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
             window.open(url, '_blank');
         };
