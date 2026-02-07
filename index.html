@@ -66,7 +66,44 @@
             </h1>
             <div class="text-[10px] font-bold text-base-content/50 ml-8 -mt-1">Created by ペンギンの搾り汁</div>
         </div>
-        <div class="flex-none gap-2">
+        <div class="flex-none gap-2 flex items-center">
+            <!-- Xアカウントリンク -->
+            <div class="dropdown dropdown-end">
+                <label tabindex="0" class="btn btn-ghost btn-circle btn-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                </label>
+                <ul tabindex="0" class="dropdown-content z-[100] menu p-2 shadow-lg bg-base-100 rounded-box w-64 mt-3 border border-base-300">
+                    <li class="menu-title">
+                        <span class="flex items-center gap-2">
+                            <i class="ph-fill ph-user-circle text-primary"></i>
+                            作者のXアカウント
+                        </span>
+                    </li>
+                    <li>
+                        <a href="https://x.com/petipeti_juice" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3">
+                            <i class="ph-fill ph-star text-yellow-500"></i>
+                            <div class="flex-1">
+                                <div class="font-bold">メインアカウント</div>
+                                <div class="text-xs opacity-70">@petipeti_juice</div>
+                            </div>
+                            <i class="ph-bold ph-arrow-square-out text-base-content/50"></i>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://x.com/Lime_Lemon_Hato" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3">
+                            <i class="ph-fill ph-bird text-sky-500"></i>
+                            <div class="flex-1">
+                                <div class="font-bold">サブアカウント</div>
+                                <div class="text-xs opacity-70">@Lime_Lemon_Hato</div>
+                            </div>
+                            <i class="ph-bold ph-arrow-square-out text-base-content/50"></i>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
             <label class="swap swap-rotate btn btn-ghost btn-circle btn-sm">
                 <input type="checkbox" v-model="isDarkMode" />
                 <i class="ph-fill ph-sun swap-on text-yellow-500 text-xl"></i>
