@@ -52,6 +52,11 @@
         
         .pulse-ring { animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
         @keyframes pulseRing { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .fixed-button-bar {
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     </style>
     <meta name="google-site-verification" content="Qctxr2MQwkSNSHwyrfwkSR9HDis7BM0FjcSFREWI-YA" />
 </head>
@@ -112,13 +117,13 @@
         </div>
     </header>
 
-    <main class="p-4 md:p-8 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 pb-32">
+    <main class="p-4 md:p-8 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 pb-24 md:pb-28">
         <section class="lg:col-span-4 space-y-4">
             <div class="card bg-base-100 shadow-lg">
                 <div class="card-body p-5">
                     <label class="label pt-0"><span class="label-text font-bold text-base-content/70">解析ジャンルを選択</span></label>
                     
-                    <select v-model="selectedGenre" class="select select-bordered w-full font-bold text-base bg-base-200/50 focus:outline-none focus:border-secondary">
+                    <select v-model="selectedGenre" @change="onGenreChange" class="select select-bordered w-full font-bold text-base bg-base-200/50 focus:outline-none focus:border-secondary">
                         <optgroup v-for="(group, groupName) in groupedGenres" :label="groupName" :key="groupName">
                             <option v-for="g in group" :value="g.id" :key="g.id">
                                 {{ g.name }}
@@ -148,24 +153,7 @@
                         <h2 class="text-sm font-bold text-base-content/70 uppercase tracking-wider">本文入力</h2>
                         <span class="text-xs badge" :class="inputText.length > 2000 ? 'badge-success' : 'badge-ghost'">{{ inputText.length.toLocaleString() }} chars</span>
                     </div>
-                    <textarea v-model="inputText" class="textarea textarea-bordered w-full h-[40vh] lg:h-[60vh] font-mono-jp text-base leading-relaxed resize-none focus:outline-none focus:border-secondary transition-all" placeholder="ここに小説の本文を貼り付けてください。&#10;&#10;Ultra3.2では、文末パターン、視点の一貫性、描写密度、接続詞の適切性、語彙の豊かさなど、数十項目の詳細な分析を行います。"></textarea>
-                    
-                    <div class="form-control mt-3">
-                        <label class="label cursor-pointer justify-start gap-3">
-                            <input type="checkbox" v-model="isAIMode" class="toggle toggle-primary" />
-                            <span class="label-text font-bold flex items-center gap-2">
-                                <i class="ph-fill ph-robot text-lg"></i>
-                                AIモード（Hugging Face API）
-                            </span>
-                        </label>
-                        <p class="text-xs text-base-content/60 ml-14">AIが本文を読んで採点し、読後感想を書きます</p>
-                    </div>
-                    
-                    <button @click="analyzeText" class="btn btn-secondary btn-lg w-full mt-4 gap-2" :disabled="inputText.length < 100">
-                        <i class="ph-bold ph-magnifying-glass text-xl"></i>
-                        <span class="font-bold">分析開始</span>
-                        <span v-if="inputText.length < 100" class="text-xs opacity-70">(100文字以上必要)</span>
-                    </button>
+                    <textarea v-model="inputText" class="textarea textarea-bordered w-full h-[40vh] lg:h-[55vh] font-mono-jp text-base leading-relaxed resize-none focus:outline-none focus:border-secondary transition-all" placeholder="ここに小説の本文を貼り付けてください。&#10;&#10;Ultra3.2では、文末パターン、視点の一貫性、描写密度、接続詞の適切性、語彙の豊かさなど、数十項目の詳細な分析を行います。"></textarea>
                 </div>
             </div>
         </section>
@@ -351,6 +339,30 @@
             </div>
         </section>
     </main>
+
+    <!-- 固定解析ボタン -->
+    <div class="fixed bottom-0 left-0 right-0 z-40 bg-base-100/95 backdrop-blur-md border-t border-base-300 shadow-2xl fixed-button-bar">
+        <div class="max-w-7xl mx-auto p-3 md:p-4">
+            <div class="flex items-center justify-center gap-3 md:gap-4 flex-wrap">
+                <!-- AIモードトグル -->
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" v-model="isAIMode" class="toggle toggle-primary toggle-sm md:toggle-md" />
+                    <span class="text-xs md:text-sm font-bold flex items-center gap-1.5">
+                        <i class="ph-fill ph-robot text-base md:text-lg"></i>
+                        <span class="hidden sm:inline">AIモード</span>
+                    </span>
+                </label>
+                
+                <!-- 分析ボタン -->
+                <button @click="analyzeText" class="btn btn-secondary btn-md md:btn-lg gap-2 shadow-lg min-w-[200px] md:min-w-[280px]" :disabled="inputText.length < 100">
+                    <i class="ph-bold ph-magnifying-glass text-lg md:text-xl"></i>
+                    <span class="font-bold">分析開始</span>
+                    <span v-if="inputText.length < 100" class="text-xs opacity-70 hidden md:inline">(あと{{ 100 - inputText.length }}文字)</span>
+                    <span v-else class="badge badge-success text-xs">{{ inputText.length.toLocaleString() }}</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <div v-if="toastMessage" class="toast toast-top toast-center z-[100] animate-bounce-in">
         <div class="alert shadow-lg" :class="toastType">
@@ -896,6 +908,14 @@ createApp({
                 });
                 isProcessing.value = false;
             }, 300);
+        };
+
+        const onGenreChange = () => {
+            // すでに分析結果が存在し、テキストが100文字以上の場合のみ自動再採点
+            if (stats.value && inputText.value.trim().length >= 100) {
+                showToast(`${currentScoringProfile.value.name}で再採点中...`, 'alert-info', 'ph-fill ph-arrows-clockwise');
+                analyzeText();
+            }
         };
 
 const analyzeWithAI = async () => {
@@ -2230,7 +2250,7 @@ console.log("Sample Words:", positiveWords.slice(0, 5), negativeWords.slice(0, 5
             isDarkMode, toastMessage, toastType, toastIcon, currentScoringProfile, 
             isAIMode, aiComment, isAIProcessing, showAITermsModal, hasAgreedToAITerms,
             analyzeText, analyzeWithAI, getScoreColor, getScoreBg, rankColorClass, rankGradient, shareResult,
-            acceptAITerms, declineAITerms
+            acceptAITerms, declineAITerms, onGenreChange
         };
     }
 }).mount('#app');
