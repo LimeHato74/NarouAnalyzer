@@ -1,11 +1,11 @@
-# Narou Analyzer Ultra2
+# Narou Analyzer Ultra3.2
 
 Web小説（なろう・カクヨム等）の執筆支援ツールです。
 「自分の小説、客観的に見てどうなんだろう？」という疑問を解消するために作りました。
 
 恋愛、ファンタジー、SFなど**18種類のジャンル**に合わせて、文章の「読みやすさ」や「構成バランス」を自動でスコアリングします。
 
-![Version](https://img.shields.io/badge/version-2.0-blue)
+![Version](https://img.shields.io/badge/version-3.2-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## どんなツール？
