@@ -24,6 +24,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&family=Zen+Maru+Gothic:wght@500;700&display=swap');
@@ -178,13 +179,13 @@
 
             <div v-else class="space-y-6 animate-fade-in-up">
                 
-                <div class="card bg-base-100 shadow-xl overflow-hidden relative">
+                <div class="card bg-base-100 shadow-xl overflow-visible relative">
                     <div class="absolute top-0 left-0 w-3 h-full" :class="rankColorClass"></div>
-                    <div class="absolute -right-10 -top-10 opacity-5 rotate-12">
+                    <div class="absolute -right-10 -top-10 opacity-5 rotate-12" style="overflow: hidden;">
                         <i class="ph-fill ph-medal text-9xl"></i>
                     </div>
                     
-                    <div class="card-body p-6 md:p-8">
+                    <div class="card-body p-6 md:p-8 overflow-visible">
                         <div class="flex flex-col md:flex-row gap-8 items-center">
                             <div class="text-center min-w-[160px] relative">
                                 <div class="text-xs text-base-content/60 font-bold mb-1 uppercase tracking-widest flex items-center justify-center gap-2">
@@ -195,7 +196,7 @@
                                 <div class="text-3xl font-bold mt-[-10px] text-base-content/50">{{ stats.totalScore.toFixed(1) }}<span class="text-sm">/100</span></div>
                             </div>
                             
-                            <div class="flex-1 w-full space-y-4">
+                            <div class="flex-1 w-full space-y-4 overflow-visible">
                                 <div class="bg-base-200/60 p-5 rounded-2xl border border-base-300 relative">
                                     <h3 class="font-bold text-sm mb-2 flex items-center gap-2 text-secondary">
                                         <i class="ph-fill ph-robot"></i> {{ currentScoringProfile.name }}としての評価
@@ -216,15 +217,64 @@
                                     <p v-else class="text-sm text-base-content/60 italic">AI分析を待機中...</p>
                                 </div>
                                 
-                                <div class="flex flex-wrap items-center justify-between gap-4">
+                                <div class="flex flex-wrap items-center justify-between gap-4 relative">
                                     <div class="flex flex-wrap gap-2">
                                         <div v-for="tag in stats.tags" :key="tag" class="badge badge-outline badge-lg text-xs py-3 px-4 bg-base-100">
                                             # {{ tag }}
                                         </div>
                                     </div>
-                                    <button @click="shareResult" class="btn btn-sm btn-ghost gap-2">
-                                        <i class="ph-bold ph-share-network"></i>結果共有
-                                    </button>
+                                    
+                                    <!-- 共有ドロップダウン -->
+                                    <div class="dropdown dropdown-end">
+                                        <label tabindex="0" class="btn btn-secondary gap-2 relative z-10">
+                                            <i class="ph-bold ph-share-network"></i>
+                                            結果を共有
+                                            <i class="ph-bold ph-caret-down"></i>
+                                        </label>
+                                        <ul tabindex="0" class="dropdown-content menu p-2 shadow-2xl bg-base-100 rounded-box w-60 mt-2 border-2 border-base-300" style="z-index: 1000 !important; position: absolute;">
+                                            <li>
+                                                <a @click="shareToXDirect" class="flex items-center gap-3 py-3">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                                                    </svg>
+                                                    <div>
+                                                        <div class="font-bold">Xに共有</div>
+                                                        <div class="text-xs opacity-70">投稿画面を開く</div>
+                                                    </div>
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a @click="shareToLine" class="flex items-center gap-3 py-3">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#06C755">
+                                                        <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+                                                    </svg>
+                                                    <div>
+                                                        <div class="font-bold">LINEで共有</div>
+                                                        <div class="text-xs opacity-70">テキストで送信</div>
+                                                    </div>
+                                                </a>
+                                            </li>
+                                            <div class="divider my-1"></div>
+                                            <li>
+                                                <a @click="copyResultText" class="flex items-center gap-3 py-3">
+                                                    <i class="ph-bold ph-copy text-xl"></i>
+                                                    <div>
+                                                        <div class="font-bold">テキストをコピー</div>
+                                                        <div class="text-xs opacity-70">SNS投稿用</div>
+                                                    </div>
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a @click="downloadCard" class="flex items-center gap-3 py-3">
+                                                    <i class="ph-bold ph-download-simple text-xl"></i>
+                                                    <div>
+                                                        <div class="font-bold">画像をダウンロード</div>
+                                                        <div class="text-xs opacity-70">PNG形式で保存</div>
+                                                    </div>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -449,6 +499,45 @@
                     <i class="ph-bold ph-check"></i>
                     同意してAIモードを有効化
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 共有カード生成用（画面外に配置） -->
+    <div id="shareCard" style="position: fixed; left: -9999px; top: 0;">
+        <div style="width: 800px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; font-family: 'Zen Maru Gothic', sans-serif;">
+            <div style="background: white; border-radius: 24px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                <!-- ヘッダー -->
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="font-size: 32px; font-weight: 900; color: #667eea; margin: 0 0 8px 0;">私の小説戦闘力</h1>
+                    <p style="font-size: 16px; color: #64748b; margin: 0;" id="cardGenre">恋愛（異世界）</p>
+                </div>
+                
+                <!-- ランク表示 -->
+                <div style="text-align: center; margin-bottom: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; padding: 30px;">
+                    <div style="font-size: 100px; font-weight: 900; line-height: 1; color: white; margin: 0;" id="cardRank">B</div>
+                    <div style="font-size: 32px; font-weight: 700; color: rgba(255,255,255,0.9); margin-top: 5px;" id="cardScore">65.0<span style="font-size: 18px;">/100</span></div>
+                </div>
+                
+                <!-- レーダーチャート -->
+                <div style="margin-bottom: 30px; background: #f8fafc; border-radius: 16px; padding: 20px;">
+                    <canvas id="cardRadarChart" width="720" height="400"></canvas>
+                </div>
+                
+                <!-- AIコメント -->
+                <div id="cardAICommentSection" style="background: linear-gradient(135deg, #fdf4ff 0%, #fae8ff 100%); padding: 24px; border-radius: 16px; margin-bottom: 20px; border: 2px solid #e9d5ff; display: none;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        <span style="font-size: 20px;">💜</span>
+                        <h3 style="font-size: 16px; font-weight: 700; color: #7c3aed; margin: 0;">AI読後感想</h3>
+                    </div>
+                    <p id="cardAIComment" style="font-size: 15px; line-height: 1.7; color: #1f2937; margin: 0; font-style: italic;">「素晴らしい作品です！」</p>
+                </div>
+                
+                <!-- フッター -->
+                <div style="text-align: center; padding-top: 20px; border-top: 2px solid #e2e8f0;">
+                    <p style="font-size: 18px; font-weight: 700; color: #475569; margin: 0 0 4px 0;">Narou Analyzer Ultra3.2</p>
+                    <p style="font-size: 12px; color: #94a3b8; margin: 0;">#なろうアナライザー</p>
+                </div>
             </div>
         </div>
     </div>
@@ -842,6 +931,135 @@ createApp({
                 navigator.clipboard.writeText(text);
                 showToast('結果をクリップボードにコピーしました！', 'alert-success', 'ph-fill ph-check-circle');
             }
+        };
+
+        // カード画像を生成する内部関数
+        const generateCardImage = async () => {
+            if (!stats.value) return null;
+            
+            // カード用データを設定
+            document.getElementById('cardGenre').textContent = currentScoringProfile.value.name;
+            document.getElementById('cardRank').textContent = stats.value.rank;
+            document.getElementById('cardScore').innerHTML = `${stats.value.totalScore.toFixed(1)}<span style="font-size: 18px;">/100</span>`;
+            
+            // AIコメントの表示/非表示
+            const aiCommentSection = document.getElementById('cardAICommentSection');
+            if (isAIMode.value && aiComment.value && !isAIProcessing.value) {
+                aiCommentSection.style.display = 'block';
+                document.getElementById('cardAIComment').textContent = `「${aiComment.value}」`;
+            } else {
+                aiCommentSection.style.display = 'none';
+            }
+            
+            // 既存のチャートがあれば破棄
+            const existingChart = Chart.getChart('cardRadarChart');
+            if (existingChart) {
+                existingChart.destroy();
+            }
+            
+            // レーダーチャートを描画
+            const cardCanvas = document.getElementById('cardRadarChart');
+            const cardCtx = cardCanvas.getContext('2d');
+            
+            new Chart(cardCtx, {
+                type: 'radar',
+                data: {
+                    labels: stats.value.radarData.map(d => d.label),
+                    datasets: [{
+                        label: 'スコア',
+                        data: stats.value.radarData.map(d => d.score),
+                        backgroundColor: 'rgba(102, 126, 234, 0.25)',
+                        borderColor: '#667eea',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#667eea',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                stepSize: 25,
+                                font: { size: 14 },
+                                color: '#64748b'
+                            },
+                            pointLabels: {
+                                font: { size: 15, weight: 'bold' },
+                                color: '#334155'
+                            },
+                            grid: { color: '#cbd5e1' }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+            
+            // 少し待ってからキャプチャ
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            try {
+                const canvas = await html2canvas(document.getElementById('shareCard'), {
+                    backgroundColor: null,
+                    scale: 2,
+                    logging: false
+                });
+                
+                return canvas;
+            } catch (error) {
+                console.error('Card generation error:', error);
+                return null;
+            }
+        };
+
+        // テキストをコピー
+        const copyResultText = () => {
+            if (!stats.value) return;
+            const text = `私の小説戦闘力は${stats.value.rank}ランク！（${stats.value.totalScore.toFixed(1)}点）\nジャンル: ${currentScoringProfile.value.name}\n\n#なろうアナライザー\nhttps://narou-analyzer.example.com`;
+            navigator.clipboard.writeText(text);
+            showToast('テキストをクリップボードにコピーしました！', 'alert-success', 'ph-fill ph-check-circle');
+        };
+
+        // 画像をダウンロード
+        const downloadCard = async () => {
+            showToast('画像を生成中...', 'alert-info', 'ph-fill ph-image');
+            
+            const canvas = await generateCardImage();
+            if (!canvas) {
+                showToast('画像生成に失敗しました', 'alert-error', 'ph-fill ph-x-circle');
+                return;
+            }
+            
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `narou-analyzer-${stats.value.rank}-${Date.now()}.png`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                showToast('カード画像をダウンロードしました！', 'alert-success', 'ph-fill ph-check-circle');
+            });
+        };
+
+        // LINEで共有
+        const shareToLine = () => {
+            if (!stats.value) return;
+            const text = `私の小説戦闘力は${stats.value.rank}ランク！（${stats.value.totalScore.toFixed(1)}点）\nジャンル: ${currentScoringProfile.value.name}\n\n#なろうアナライザー`;
+            const url = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+        };
+
+        // Xに直接投稿（テキストのみ）
+        const shareToXDirect = () => {
+            if (!stats.value) return;
+            const text = `私の小説戦闘力は${stats.value.rank}ランク！（${stats.value.totalScore.toFixed(1)}点）\nジャンル: ${currentScoringProfile.value.name}\n\n#なろうアナライザー`;
+            const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
         };
 
         watch(isDarkMode, (val) => {
@@ -2250,7 +2468,7 @@ console.log("Sample Words:", positiveWords.slice(0, 5), negativeWords.slice(0, 5
             isDarkMode, toastMessage, toastType, toastIcon, currentScoringProfile, 
             isAIMode, aiComment, isAIProcessing, showAITermsModal, hasAgreedToAITerms,
             analyzeText, analyzeWithAI, getScoreColor, getScoreBg, rankColorClass, rankGradient, shareResult,
-            acceptAITerms, declineAITerms, onGenreChange
+            acceptAITerms, declineAITerms, onGenreChange, shareToXDirect, copyResultText, downloadCard, shareToLine
         };
     }
 }).mount('#app');
