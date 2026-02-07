@@ -115,6 +115,23 @@
             touch-action: manipulation;
         }
         
+        /* ヘッダーのボタンを確実に表示 */
+        header .btn-circle {
+            flex-shrink: 0 !important;
+            min-width: 3rem !important;
+            min-height: 3rem !important;
+            width: 3rem !important;
+            height: 3rem !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 !important;
+        }
+        
+        header .flex-none {
+            flex-shrink: 0 !important;
+        }
+        
         /* タッチターゲットサイズの確保（最小48x48px） */
         .btn, button, a {
             min-height: 48px;
@@ -469,19 +486,19 @@
 <body class="min-h-screen bg-base-200 flex flex-col">
 
 <div id="app" v-cloak class="flex-grow">
-    <header class="navbar glass-panel sticky top-0 z-50 px-2 sm:px-4 md:px-6 transition-colors duration-300 min-h-[60px] sm:min-h-[70px]">
-        <div class="flex-1 flex-col items-start">
+    <header class="navbar glass-panel sticky top-0 z-50 px-3 sm:px-4 md:px-6 transition-colors duration-300 min-h-[60px] sm:min-h-[70px]">
+        <div class="flex-1 flex-col items-start min-w-0 pr-2">
             <h1 class="text-lg sm:text-xl md:text-2xl font-black text-primary flex items-center gap-1 sm:gap-2 tracking-tighter cursor-pointer" onclick="window.scrollTo(0,0)">
                 <i class="ph-fill ph-pen-nib-straight text-xl sm:text-2xl"></i> 
                 <span class="whitespace-nowrap">Narou Analyzer <span class="text-secondary">Ultra3.2</span></span>
             </h1>
             <div class="text-[9px] sm:text-[10px] font-bold text-base-content/50 ml-6 sm:ml-8 -mt-1">Created by ペンギンの搾り汁</div>
         </div>
-        <div class="flex-none gap-1 sm:gap-2 flex items-center">
+        <div class="flex-none gap-2 sm:gap-2 flex items-center">
             <!-- Xアカウントリンク -->
-            <div class="dropdown dropdown-end">
-                <label tabindex="0" class="btn btn-ghost btn-circle btn-sm touch-target" aria-label="作者のXアカウント">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" class="sm:w-5 sm:h-5">
+            <div class="dropdown dropdown-end z-[60]">
+                <label tabindex="0" class="btn btn-ghost btn-circle touch-target flex-shrink-0" aria-label="作者のXアカウント" style="min-width: 3rem; min-height: 3rem; width: 3rem; height: 3rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                     </svg>
                 </label>
@@ -515,10 +532,10 @@
                 </ul>
             </div>
             
-            <label class="swap swap-rotate btn btn-ghost btn-circle btn-sm touch-target" aria-label="テーマ切替">
-                <input type="checkbox" v-model="isDarkMode" />
-                <i class="ph-fill ph-sun swap-on text-yellow-500 text-lg sm:text-xl"></i>
-                <i class="ph-fill ph-moon swap-off text-indigo-500 text-lg sm:text-xl"></i>
+            <label class="btn btn-ghost btn-circle touch-target flex-shrink-0" aria-label="テーマ切替" style="min-width: 3rem; min-height: 3rem; width: 3rem; height: 3rem;">
+                <input type="checkbox" v-model="isDarkMode" class="hidden" />
+                <i v-show="!isDarkMode" class="ph-fill ph-sun text-yellow-500 text-2xl"></i>
+                <i v-show="isDarkMode" class="ph-fill ph-moon text-indigo-500 text-2xl"></i>
             </label>
         </div>
     </header>
