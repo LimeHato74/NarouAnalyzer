@@ -59,18 +59,10 @@
         }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         
-        /* ドロップダウンメニューを確実に右端に配置 */
-        .dropdown-end .dropdown-content {
-            right: 0 !important;
-            left: auto !important;
-        }
-        
         /* スマホでのドロップダウンメニュー調整 */
         @media (max-width: 640px) {
-            .dropdown-end .dropdown-content {
+            .dropdown-content {
                 max-width: calc(100vw - 2rem);
-                right: 0 !important;
-                left: auto !important;
             }
         }
     </style>
@@ -240,14 +232,14 @@
                                     </div>
                                     
                                     <!-- 共有ドロップダウン -->
-                                    <div class="dropdown dropdown-end relative w-auto">
+                                    <div class="dropdown dropdown-bottom relative w-auto">
                                         <label tabindex="0" class="btn btn-secondary gap-2 relative z-10 whitespace-nowrap">
                                             <i class="ph-bold ph-share-network"></i>
                                             <span class="hidden sm:inline">結果を共有</span>
                                             <span class="sm:hidden">共有</span>
                                             <i class="ph-bold ph-caret-down"></i>
                                         </label>
-                                        <ul tabindex="0" class="dropdown-content menu p-2 shadow-2xl bg-base-100 rounded-box w-52 mt-2 border-2 border-base-300" style="z-index: 1000 !important; position: absolute; right: 0; left: auto;">
+                                        <ul tabindex="0" class="dropdown-content menu p-2 shadow-2xl bg-base-100 rounded-box w-52 mt-2 border-2 border-base-300" style="z-index: 1000 !important; position: absolute; left: 50%; transform: translateX(-50%);">
                                             <li>
                                                 <a @click="shareToXDirect" class="flex items-center gap-3 py-3">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
