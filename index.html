@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <title>Narou Analyzer Ultra2 - Created by ペンギンの搾り汁</title>
+    <title>Narou Analyzer Ultra3.2 - Created by ペンギンの搾り汁</title>
     <meta name="description" content="Web小説執筆者向け高精度分析ツール。恋愛、ファンタジー、SFなどジャンル別に評価">
     
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
@@ -62,7 +62,7 @@
         <div class="flex-1 flex-col items-start">
             <h1 class="text-xl md:text-2xl font-black text-primary flex items-center gap-2 tracking-tighter cursor-pointer" onclick="window.scrollTo(0,0)">
                 <i class="ph-fill ph-pen-nib-straight"></i> 
-                <span>Narou Analyzer <span class="text-secondary">Ultra2</span></span>
+                <span>Narou Analyzer <span class="text-secondary">Ultra3.2</span></span>
             </h1>
             <div class="text-[10px] font-bold text-base-content/50 ml-8 -mt-1">Created by ペンギンの搾り汁</div>
         </div>
@@ -111,7 +111,7 @@
                         <h2 class="text-sm font-bold text-base-content/70 uppercase tracking-wider">本文入力</h2>
                         <span class="text-xs badge" :class="inputText.length > 2000 ? 'badge-success' : 'badge-ghost'">{{ inputText.length.toLocaleString() }} chars</span>
                     </div>
-                    <textarea v-model="inputText" class="textarea textarea-bordered w-full h-[40vh] lg:h-[60vh] font-mono-jp text-base leading-relaxed resize-none focus:outline-none focus:border-secondary transition-all" placeholder="ここに小説の本文を貼り付けてください。&#10;&#10;Ultra2では、文末パターン、視点の一貫性、描写密度、接続詞の適切性、語彙の豊かさなど、数十項目の詳細な分析を行います。"></textarea>
+                    <textarea v-model="inputText" class="textarea textarea-bordered w-full h-[40vh] lg:h-[60vh] font-mono-jp text-base leading-relaxed resize-none focus:outline-none focus:border-secondary transition-all" placeholder="ここに小説の本文を貼り付けてください。&#10;&#10;Ultra3.2では、文末パターン、視点の一貫性、描写密度、接続詞の適切性、語彙の豊かさなど、数十項目の詳細な分析を行います。"></textarea>
                     
                     <div class="form-control mt-3">
                         <label class="label cursor-pointer justify-start gap-3">
@@ -137,7 +137,7 @@
             <div v-if="!stats" class="flex flex-col h-full min-h-[400px]">
                 <div class="flex-1 flex flex-col items-center justify-center text-base-content/30 border-2 border-dashed border-base-300 rounded-3xl p-8 mb-6">
                     <i class="ph-duotone ph-books text-7xl mb-4 animate-pulse text-secondary"></i>
-                    <p class="text-xl font-bold">高精度ジャンル別解析 Ultra2</p>
+                    <p class="text-xl font-bold">高精度ジャンル別解析 Ultra3.2</p>
                     <p class="text-sm mt-2 opacity-70">恋愛・ファンタジー・文芸・SFなど全20カテゴリに対応</p>
                     <div class="mt-4 grid grid-cols-2 gap-2 text-xs opacity-60">
                         <div>✓ 文末パターン精密分析</div>
@@ -321,6 +321,88 @@
             <span class="font-bold">{{ toastMessage }}</span>
         </div>
     </div>
+
+    <!-- AI利用規約モーダル -->
+    <div v-if="showAITermsModal" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in-up">
+        <div class="bg-base-100 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="p-6 border-b border-base-300">
+                <h2 class="text-2xl font-bold flex items-center gap-3">
+                    <i class="ph-fill ph-warning-circle text-warning text-3xl"></i>
+                    AIモード利用規約
+                </h2>
+            </div>
+            
+            <div class="p-6 overflow-y-auto flex-1 space-y-4 text-sm leading-relaxed">
+                <div class="alert alert-warning">
+                    <i class="ph-fill ph-info text-xl"></i>
+                    <div class="text-sm">
+                        <strong>重要：</strong>AIモードをご利用になる前に、以下の利用規約を必ずお読みください。
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <h3 class="font-bold text-base flex items-center gap-2">
+                        <i class="ph-fill ph-one text-primary"></i>
+                        データの外部送信について
+                    </h3>
+                    <p class="pl-7 text-base-content/80">
+                        AIモードを有効にすると、入力された本文（最大2000文字）が外部のAI API（Hugging Face）に送信されます。送信されたデータは、AI による分析と感想生成にのみ使用されます。
+                    </p>
+                </div>
+
+                <div class="space-y-3">
+                    <h3 class="font-bold text-base flex items-center gap-2">
+                        <i class="ph-fill ph-two text-primary"></i>
+                        免責事項
+                    </h3>
+                    <ul class="pl-7 space-y-2 text-base-content/80 list-disc list-inside">
+                        <li>本サービスは、送信されたデータの安全性、機密性、完全性について一切の責任を負いません。</li>
+                        <li>機密情報、個人情報、未公開作品など、外部に送信したくない内容は入力しないでください。</li>
+                        <li>AI APIの利用により発生したいかなる損害についても、本サービスは責任を負いません。</li>
+                        <li>AIによる評価や感想は参考情報であり、正確性を保証するものではありません。</li>
+                    </ul>
+                </div>
+
+                <div class="space-y-3">
+                    <h3 class="font-bold text-base flex items-center gap-2">
+                        <i class="ph-fill ph-three text-primary"></i>
+                        データの取り扱い
+                    </h3>
+                    <p class="pl-7 text-base-content/80">
+                        送信されたデータは、外部AI APIのプロバイダーの利用規約およびプライバシーポリシーに従って処理されます。本サービスは、外部APIプロバイダーによるデータの保存、使用、共有について制御することはできません。
+                    </p>
+                </div>
+
+                <div class="space-y-3">
+                    <h3 class="font-bold text-base flex items-center gap-2">
+                        <i class="ph-fill ph-four text-primary"></i>
+                        ユーザーの責任
+                    </h3>
+                    <p class="pl-7 text-base-content/80">
+                        AIモードを使用することにより、ユーザーは上記の内容を理解し、データ送信に伴うリスクを承諾したものとみなされます。著作権、プライバシー権、その他の権利を侵害する内容を送信しないでください。
+                    </p>
+                </div>
+
+                <div class="alert alert-info mt-4">
+                    <i class="ph-fill ph-lightbulb text-xl"></i>
+                    <div class="text-sm">
+                        <strong>推奨：</strong>個人情報や機密情報を含まない、公開予定またはサンプルテキストでのご利用をお勧めします。
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-base-300 flex gap-3">
+                <button @click="declineAITerms" class="btn btn-ghost flex-1">
+                    <i class="ph-bold ph-x"></i>
+                    同意しない
+                </button>
+                <button @click="acceptAITerms" class="btn btn-primary flex-1">
+                    <i class="ph-bold ph-check"></i>
+                    同意してAIモードを有効化
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -340,6 +422,8 @@ createApp({
         const isAIMode = ref(false);
         const aiComment = ref('');
         const isAIProcessing = ref(false);
+        const showAITermsModal = ref(false);
+        const hasAgreedToAITerms = ref(false);
 
         let radarChart = null;
         let sentimentChart = null;
@@ -702,7 +786,7 @@ createApp({
 
         const shareResult = () => {
             if (!stats.value) return;
-            const text = `Narou Analyzer Ultra2\nジャンル: ${currentScoringProfile.value.name}\nランク: ${stats.value.rank} (${stats.value.totalScore.toFixed(1)}点)\n#なろうアナライザー`;
+            const text = `Narou Analyzer Ultra3.2\nジャンル: ${currentScoringProfile.value.name}\nランク: ${stats.value.rank} (${stats.value.totalScore.toFixed(1)}点)\n#なろうアナライザー`;
             if (navigator.share) {
                 navigator.share({ title: 'なろうアナライザー結果', text });
             } else {
@@ -717,6 +801,40 @@ createApp({
                 nextTick(() => renderCharts(stats.value));
             }
         });
+
+        // AIモードの切り替えを監視
+        watch(isAIMode, (newVal, oldVal) => {
+            // チェックボックスがオンになろうとしている && まだ規約に同意していない
+            if (newVal === true && !hasAgreedToAITerms.value) {
+                // すぐにチェックを外す
+                isAIMode.value = false;
+                // モーダルを表示
+                showAITermsModal.value = true;
+            }
+        });
+
+        // 規約に同意
+        const acceptAITerms = () => {
+            hasAgreedToAITerms.value = true;
+            showAITermsModal.value = false;
+            isAIMode.value = true;
+            
+            // localStorageに保存（次回以降は表示しない）
+            try {
+                localStorage.setItem('aiTermsAgreed', 'true');
+            } catch (e) {
+                console.warn('localStorage not available');
+            }
+            
+            showToast('AIモードを有効化しました', 'alert-success', 'ph-fill ph-check-circle');
+        };
+
+        // 規約に同意しない
+        const declineAITerms = () => {
+            showAITermsModal.value = false;
+            isAIMode.value = false;
+            showToast('AIモードは無効のままです', 'alert-info', 'ph-fill ph-info');
+        };
 
         const analyzeText = () => {
             const text = inputText.value.trim();
@@ -912,18 +1030,117 @@ ${inputText.value.substring(0, 2000)}
             const dialogChars = dialogLines.join('').length;
             const dialogRatio = (dialogChars / totalChars) * 100;
             
-            const endingPatterns = {
-                '〜た/だ': /[たダだ][。！？」』]/g,
-                '〜る': /[るル][。！？」』]/g,
-                '〜ない': /ない[。！？」』]/g,
-                '〜のだ/んだ': /[のん][だダ][。！？」』]/g,
-                '〜である': /である[。！？」』]/g,
-                '〜ます/です': /[ますです][。！？」』]/g,
-                '体言止め': /[ぁ-ん][。！？」』]/g,
-                '〜か': /か[。！？」』]/g,
-                '〜ね/よ/な': /[ねよな][。！？」』]/g,
-                '〜そうだ': /そうだ[。！？」』]/g
-            };
+          const endingPatterns = {
+    // -------------------------
+    // 【基本・断定】 (Basic Assertion)
+    // -------------------------
+    '〜る（辞書形）': /[るうくぐすつぬむぶぷ][。！？」』]/g,
+    '〜だ（断定・常体）': /だ[。！？」』]/g,
+    '〜である（形式ばった断定）': /である[。！？」』]/g,
+    '〜の（断定省略・女性/子供）': /(?:る|た|ない|いる|ある)の[。！？」』]/g,
+
+    // -------------------------
+    // 【丁寧・敬語】 (Polite)
+    // -------------------------
+    '〜ます（丁寧・現在）': /ます[。！？」』]/g,
+    '〜です（丁寧・断定）': /です[。！？」』]/g,
+    '〜でございます（丁寧・丁重）': /でございます[。！？」』]/g,
+    '〜ございます（丁寧・存在）': /ございます[。！？」』]/g,
+    '〜致します（謙譲）': /致します[。！？」』]/g,
+    '〜参ります（謙譲）': /参ります[。！？」』]/g,
+
+    // -------------------------
+    // 【過去・完了】 (Past / Perfect)
+    // -------------------------
+    '〜た/だ（過去・常体）': /[ただ][。！？」』]/g,
+    '〜ました（過去・丁寧）': /ました[。！？」』]/g,
+    '〜でした（過去・丁寧断定）': /でした[。！？」』]/g,
+    '〜てしまった/ちゃった（完了・遺憾）': /(?:てしまった|ちゃった|じゃった)[。！？」』]/g,
+    '〜ていた（過去進行）': /ていた[。！？」』]/g,
+    '〜てあった（状態保持）': /てあった[。！？」』]/g,
+
+    // -------------------------
+    // 【否定】 (Negative)
+    // -------------------------
+    '〜ない（否定・常体）': /ない[。！？」』]/g,
+    '〜ん（否定・口語/方言）': /ん[。！？」』]/g, // "わからん"など
+    '〜ません（否定・丁寧）': /ません[。！？」』]/g,
+    '〜ないです（否定・丁寧口語）': /ないです[。！？」』]/g,
+    '〜ず（打ち消し・古風/書き言葉）': /ず[。！？」』]/g,
+
+    // -------------------------
+    // 【推量・様態・伝聞】 (Conjecture / Hearsay)
+    // -------------------------
+    '〜だろう（推量・常体）': /だろう[。！？」』]/g,
+    '〜でしょう（推量・丁寧）': /でしょう[。！？」』]/g,
+    '〜らしい（伝聞・推定）': /らしい[。！？」』]/g,
+    '〜そうだ（様態・伝聞）': /そうだ[。！？」』]/g,
+    '〜ようだ（比況・推定）': /ようだ[。！？」』]/g,
+    '〜みたいだ（比況・口語）': /みたい[だです]?[。！？」』]/g,
+    '〜かもしれない（可能性）': /かもしれない[。！？」』]/g,
+    '〜はずだ（確信）': /はず[だです]?[。！？」』]/g,
+    '〜に違いない（強い確信）': /に違いない[。！？」』]/g,
+
+    // -------------------------
+    // 【意志・願望・勧誘】 (Volitional / Desire)
+    // -------------------------
+    '〜たい（願望）': /たい[。！？」』]/g,
+    '〜たいです（願望・丁寧）': /たいです[。！？」』]/g,
+    '〜よう/おう（意志・勧誘）': /(?:よう|おう)[。！？」』]/g,
+    '〜ましょう（勧誘・丁寧）': /ましょう[。！？」』]/g,
+    '〜ほしがる（第三者の願望）': /ほしがる[。！？」』]/g,
+
+    // -------------------------
+    // 【義務・当然・不可避】 (Obligation / Necessity)
+    // -------------------------
+    '〜べきだ（義務）': /べき(?:だ|です|である)[。！？」』]/g,
+    '〜なければならない（義務）': /(?:なければ|なきゃ)(?:ならない|いけない|なんない)[。！？」』]/g,
+    '〜ざるを得ない（不可避）': /ざるを得ない[。！？」』]/g,
+    '〜ことだ（忠告）': /こと[だです][。！？」』]/g,
+
+    // -------------------------
+    // 【強調・説明・形式名詞】 (Emphasis / Explanation)
+    // -------------------------
+    '〜のだ/んだ（強調・説明）': /[のん][だです][。！？」』]/g,
+    '〜わけだ（納得・結論）': /わけ[だです][。！？」』]/g,
+    '〜ものだ（詠嘆・一般論）': /もの[だです][。！？」』]/g,
+    '〜こと（書き言葉・命令）': /こと[。！？」』]/g, // "～すること。"
+
+    // -------------------------
+    // 【疑問・反語】 (Question)
+    // -------------------------
+    '〜か（疑問）': /か[。！？」』]/g,
+    '〜かい/だい（疑問・親愛）': /[かだ]い[。！？」』]/g,
+    '〜の（疑問・イントネーション）': /の[？][。！？」』]?/g, // 文末が「の？」の場合
+    '〜かしら/かな（疑問・自問）': /(?:かしら|かな)[。！？」』]/g,
+
+    // -------------------------
+    // 【終助詞（感情・ニュアンス）】 (Sentence-final particles)
+    // -------------------------
+    '〜ね/ねえ（同意・確認）': /ねぇ?[。！？」』]/g,
+    '〜よ（主張・通知）': /よ[。！？」』]/g,
+    '〜な/なぁ（詠嘆・禁止）': /なぁ?[。！？」』]/g,
+    '〜わ（女性的/強調）': /わ[。！？」』]/g,
+    '〜ぞ/ぜ（強意・男性的）': /[ぞぜ][。！？」』]/g,
+    '〜さ（軽度な断定）': /さ[。！？」』]/g,
+    '〜もん（言い訳・甘え）': /もん[。！？」』]/g,
+    '〜ジャン（口語・同意）': /(?:じゃん|ジャン)[。！？」』]/g,
+
+    // -------------------------
+    // 【命令・依頼・接続】 (Imperative / Request)
+    // -------------------------
+    '〜て/で（軽い依頼・言いさし）': /[てで][。！？」』]/g,
+    '〜ろ/よ（命令）': /[ろよ][!！][。！？」』]?/g, // 感嘆符付きを優先
+    '〜なさい（命令・丁寧）': /なさい[。！？」』]/g,
+    '〜ください（依頼・丁寧）': /ください[。！？」』]/g,
+    '〜たまえ（命令・尊大）': /たまえ[。！？」』]/g,
+
+    // -------------------------
+    // 【その他・体言止め・倒置】 (Others)
+    // -------------------------
+    '体言止め（名詞終了）': /(?:[ぁ-んァ-ヶ]|[一-龠々])[。！？」』]/g, // 少し厳密化：漢字orカナ＋句読点
+    // ※体言止めは他のパターンにマッチしなかった場合の「その他」として扱うのが安全です
+};
             
             const endingCounts = {};
             let totalEndings = 0;
@@ -989,10 +1206,87 @@ ${inputText.value.substring(0, 2000)}
             const redundancyScore = Math.max(0, 100 - (redundancyCount / sentences.length) * 20);
             const redundancyLabel = redundancyCount < 3 ? 'minimal' : redundancyCount < 8 ? 'moderate' : 'excessive';
             
-            const goodConnectors = text.match(/しかし|だが|ところが|すると|そして|それで|だから|なぜなら|つまり|例えば|ただし|もっとも|一方|また/g) || [];
-            const poorConnectors = text.match(/そして、そして|それで、それで|でも、でも/g) || [];
-            
-            const connectorScore = Math.min(100, (goodConnectors.length / sentences.length) * 150 - poorConnectors.length * 10);
+          // 小説向け：文脈をつなぐ良質な接続詞・接続語句（バリエーション増強版）
+// 物語の進行、時間経過、感情の機微、場面転換を含む
+const goodConnectorsPattern = [
+    // 0. 基本的な接続詞（小説で頻出）
+    "そして", "でも", "だから", "それで", "また", "そこで",
+    
+    // 1. 逆接・葛藤（ドラマを生む）
+    "しかし", "だが", "けれど", "けれども", "だけど", "ところが",
+    "それでも", "なのに", "もっとも", "とはいえ", "だとしても",
+    "にもかかわらず", "そうは言っても", "とはいうものの", "ただ", "否",
+
+    // 2. 時間経過・場面展開（物語を進める）
+    "やがて", "すると", "その時", "そのとき", "ほどなく", "まもなく",
+    "いつしか", "とつぜん", "突然", "不意に", "ふと", "あくる日", "翌日",
+    "数日後", "しばらくして", "気付けば", "次の瞬間", "と同時に", "直後",
+    "以前", "かつて", "いまや", "今度は", "かくして", "こうして",
+
+    // 3. 添加・強調（情報を畳み掛ける）
+    "そのうえ", "しかも", "それに", "さらに", "おまけに", "あまつさえ",
+    "そればかりか", "それどころか", "加えて", "のみならず",
+
+    // 4. 原因・理由・心情（キャラクターの動機）
+    "なぜなら", "だって", "どうしてかというと", "なにしろ", "なんとなれば",
+    "というのも", "ゆえに", "それゆえ", "したがって", "だからこそ",
+
+    // 5. 転換・補足（視点を変える）
+    "さて", "ところで", "それはそうと", "一方", "他方", "翻って",
+    "ちなみに", "なお", "もっとも", "ただし", "要するに", "つまり", "いわば"
+].join("|");
+
+const goodConnectors = text.match(new RegExp(goodConnectorsPattern, "g")) || [];
+
+
+// 小説向け：避けるべき悪質な接続・冗長表現
+// 単調なリズム、稚拙に見える繰り返し、過剰な説明口調
+const poorConnectorsPattern = [
+    // 単調な繰り返し（頭の悪いリズムになる）
+    "そして、そして", "それで、それで", "でも、でも", "だから、だから",
+    "また、また", "次に、次に",
+
+    // 小説では好まれない過剰な口語・ネットスラング的接続（文頭限定）
+    "^ていうか、", "^てゆーか、", "^なので、",
+
+    // 意味の薄い繋ぎ言葉の連発
+    "そうして、そうして", "そうやって、そうやって"
+].join("|");
+
+const poorConnectors = text.match(new RegExp(poorConnectorsPattern, "g")) || [];
+
+// 接続詞スコアの改善版（より現実的な評価）
+// 基本スコア: 良質な接続詞の使用率を基準とする
+const goodConnectorRatio = sentences.length > 0 ? (goodConnectors.length / sentences.length) : 0;
+
+console.log(`接続詞デバッグ: 良質=${goodConnectors.length}, 不適切=${poorConnectors.length}, 文数=${sentences.length}, 比率=${goodConnectorRatio.toFixed(3)}`);
+
+// 現実的なスコアリング
+// - 10文に1個（10%）の接続詞で50点
+// - 5文に1個（20%）の接続詞で80点
+// - 3文に1個（33%）以上で満点
+let baseConnectorScore = 0;
+if (goodConnectorRatio >= 0.33) {
+    baseConnectorScore = 100;
+} else if (goodConnectorRatio >= 0.20) {
+    // 20%〜33%の範囲: 80〜100点
+    baseConnectorScore = 80 + ((goodConnectorRatio - 0.20) / 0.13) * 20;
+} else if (goodConnectorRatio >= 0.10) {
+    // 10%〜20%の範囲: 50〜80点
+    baseConnectorScore = 50 + ((goodConnectorRatio - 0.10) / 0.10) * 30;
+} else if (goodConnectorRatio > 0) {
+    // 0%〜10%の範囲: 20〜50点（最低20点保証）
+    baseConnectorScore = 20 + (goodConnectorRatio / 0.10) * 30;
+} else {
+    // 接続詞が全くない場合: 30点（基本点）
+    baseConnectorScore = 30;
+}
+
+// 不適切な接続詞に対するペナルティ
+const poorPenalty = poorConnectors.length * 5;
+
+// 最終スコア（最低20点、最高100点）
+const connectorScore = Math.max(20, Math.min(100, baseConnectorScore - poorPenalty));
             
             // まず、よく使われる貧弱な表現をカウント
             const poorVocab = {
@@ -1268,7 +1562,18 @@ console.log(`情景度: ${sceneDensity.toFixed(1)}%`);
             
             const keywordRegex = new RegExp(profile.keywords, 'gi');
             const keywordMatches = text.match(keywordRegex) || [];
-            const keywordDensity = keywordMatches.length / sentences.length;
+            
+            // キーワード密度の改善版
+            // 1文あたりの平均キーワード数を計算
+            const keywordsPerSentence = sentences.length > 0 ? (keywordMatches.length / sentences.length) : 0;
+            
+            // 総文字数に対するキーワードの比率も考慮
+            const keywordCharRatio = totalChars > 0 ? (keywordMatches.join('').length / totalChars) : 0;
+            
+            // 両方の指標を組み合わせて最終的な密度を計算
+            const keywordDensity = (keywordsPerSentence * 0.7) + (keywordCharRatio * 100 * 0.3);
+            
+            console.log(`ジャンルキーワード: マッチ数=${keywordMatches.length}, 文数=${sentences.length}, 文あたり=${keywordsPerSentence.toFixed(2)}, 密度=${keywordDensity.toFixed(2)}`);
         // ポジティブワード（喜び、愛、希望、勝利、安らぎ、称賛）
 /**
  * 高精度版：感情分析用単語リスト＆タイムライン生成コード
@@ -1446,7 +1751,29 @@ console.log("Sample Words:", positiveWords.slice(0, 5), negativeWords.slice(0, 5
             const tempoScore = (Math.max(0, 100 - Math.abs(tempoVariance - idealVariance) * 100) + 5) * (w.tempo || 1);
             const redundScore = (redundancyScore + 5) * (w.redundancy || 1);
             const connectorFinalScore = (Math.max(0, connectorScore) + 5) * (w.connector || 1);
-            const keywordScore = (Math.min(100, keywordDensity * 80) + 10) * (w.keyword || 1);
+            
+            // キーワードスコアの改善版
+            // より寛容な評価基準:
+            // - 密度0.5以上で80点
+            // - 密度1.0以上で100点
+            let baseKeywordScore = 0;
+            if (keywordDensity >= 1.0) {
+                baseKeywordScore = 100;
+            } else if (keywordDensity >= 0.5) {
+                // 0.5〜1.0の範囲: 80〜100点
+                baseKeywordScore = 80 + ((keywordDensity - 0.5) / 0.5) * 20;
+            } else if (keywordDensity >= 0.2) {
+                // 0.2〜0.5の範囲: 50〜80点
+                baseKeywordScore = 50 + ((keywordDensity - 0.2) / 0.3) * 30;
+            } else if (keywordDensity > 0) {
+                // 0〜0.2の範囲: 30〜50点
+                baseKeywordScore = 30 + (keywordDensity / 0.2) * 20;
+            } else {
+                // キーワードが全くない場合: 20点
+                baseKeywordScore = 20;
+            }
+            
+            const keywordScore = (baseKeywordScore + 10) * (w.keyword || 1);
             
             // 重みの合計を計算（語彙力の重みは2倍されているのでそれを反映）
             const totalWeight = (w.vocab * 2.0) + Object.entries(w).filter(([k]) => k !== 'vocab').reduce((sum, [, val]) => sum + val, 0);
@@ -1528,8 +1855,8 @@ console.log("Sample Words:", positiveWords.slice(0, 5), negativeWords.slice(0, 5
                       comment: tempoVariance > 0.5 ? '文長の差が大きい' : tempoVariance < 0.2 ? '文長が単調' : 'リズムが良好' },
                     { label: '接続詞の適切性', score: Math.round(Math.max(0, connectorScore)), 
                       comment: connectorScore > 70 ? '論理展開が明確' : '接続詞を効果的に使うと読みやすくなる' },
-                    { label: 'ジャンル適合度', score: Math.round(Math.min(100, keywordDensity * 80)), 
-                      comment: keywordDensity > 0.5 ? `${profile.name}らしさが出ている` : 'ジャンル要素を増やすと良い' },
+                    { label: 'ジャンル適合度', score: Math.round(baseKeywordScore), 
+                      comment: keywordDensity >= 0.5 ? `${profile.name}らしさが出ている` : keywordDensity >= 0.2 ? `${profile.name}の要素あり` : 'ジャンル要素を増やすと良い' },
                     { label: '漢字バランス', score: Math.round(Math.max(0, 100 - Math.abs(kanjiRatio - 27) * 3)), 
                       comment: kanjiRatio > 40 ? '漢字が多く硬い' : kanjiRatio < 18 ? 'ひらがなが多め' : '適切なバランス' }
                 ],
@@ -1726,11 +2053,11 @@ console.log("Sample Words:", positiveWords.slice(0, 5), negativeWords.slice(0, 5
                 });
             }
             
-            if (m.keywordDensity < 0.15) {
+            if (m.keywordDensity < 0.2) {
                 list.push({ 
                     label: 'ジャンル要素', 
-                    value: Math.round(m.keywordDensity * 100) + '%', 
-                    target: '15%以上', 
+                    value: m.keywordDensity.toFixed(2), 
+                    target: '0.5以上推奨', 
                     statusBadge: 'badge-info', 
                     msg: `${p.name}らしいキーワードを増やすと、ジャンルの雰囲気がより強まります。`
                 });
@@ -1839,11 +2166,34 @@ console.log("Sample Words:", positiveWords.slice(0, 5), negativeWords.slice(0, 5
             });
         };
 
+        // ページ読み込み時にlocalStorageから同意状態を読み込む
+        onMounted(() => {
+            try {
+                const agreed = localStorage.getItem('aiTermsAgreed');
+                if (agreed === 'true') {
+                    hasAgreedToAITerms.value = true;
+                }
+            } catch (e) {
+                console.warn('localStorage not available');
+            }
+            
+            // テーマの読み込み
+            try {
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme === 'night') {
+                    isDarkMode.value = true;
+                }
+            } catch (e) {
+                console.warn('localStorage not available');
+            }
+        });
+
         return { 
             inputText, selectedGenre, groupedGenres, isProcessing, stats, adviceList, 
             isDarkMode, toastMessage, toastType, toastIcon, currentScoringProfile, 
-            isAIMode, aiComment, isAIProcessing,
-            analyzeText, analyzeWithAI, getScoreColor, getScoreBg, rankColorClass, rankGradient, shareResult 
+            isAIMode, aiComment, isAIProcessing, showAITermsModal, hasAgreedToAITerms,
+            analyzeText, analyzeWithAI, getScoreColor, getScoreBg, rankColorClass, rankGradient, shareResult,
+            acceptAITerms, declineAITerms
         };
     }
 }).mount('#app');
